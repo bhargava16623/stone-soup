@@ -20,12 +20,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/" className="font-serif text-2xl font-semibold tracking-tight">
               Stone Soup
             </Link>
-            <div className="flex gap-5 text-sm text-muted">
+            <div className="flex flex-wrap justify-end gap-x-5 gap-y-1 text-sm text-muted">
               <Link href="/" className="hover:text-foreground">
                 Needs
               </Link>
               <Link href="/give" className="font-medium text-accent hover:text-foreground">
                 Giving Agent
+              </Link>
+              <Link href="/ledger" className="hover:text-foreground">
+                Ledger
               </Link>
               <Link href="/ngo" className="hover:text-foreground">
                 For organisations

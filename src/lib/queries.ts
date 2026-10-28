@@ -84,3 +84,62 @@ export async function getOrderForDonor(paypalOrderId: string) {
     },
   });
 }
+
+export interface LedgerRow {
+  id: number;
+  date: string;
+  donor: string;
+  via: "Direct" | "Giving Agent";
+  ngo: string;
+  item: string;
+  units: number;
+  vendor: string;
+  amountCents: number;
+  feeCoverCents: number;
+  priceCheck: string;
+  delivery: "Delivered" | "Under review" | "On its way";
+  captureId: string | null;
+  needId: number;
+}
+
+/** Every captured gift, newest first, for the public ledger. Donors are shown by first name only. */
+export async function getLedger(): Promise<LedgerRow[]> {
+  const rows = await db.query.donations.findMany({
+    where: (d, { eq }) => eq(d.captured, true),
+    orderBy: (d) => [desc(d.id)],
+    with: {
+      order: true,
+      impactUpdates: { columns: { id: true } },
+      need: {
+        with: {
+          ngo: true,
+          vendor: true,
+          catalogItem: true,
+          deliveries: { columns: { verdict: true } },
+        },
+      },
+    },
+  });
+  const priceLabel = { fair: "Fair", below_market: "Below market", above_market: "Above market", no_benchmark: "No market data" };
+  return rows.map((d) => ({
+    id: d.id,
+    date: (d.order.capturedAt ?? d.createdAt).toISOString(),
+    donor: d.order.donorName?.split(" ")[0] ?? "Anonymous",
+    via: d.order.source === "agent" ? "Giving Agent" : "Direct",
+    ngo: d.need.ngo.name,
+    item: d.need.catalogItem.name,
+    units: d.units,
+    vendor: d.need.vendor.name,
+    amountCents: d.vendorAmountCents,
+    feeCoverCents: d.feeCoverCents,
+    priceCheck: priceLabel[d.need.fairPrice],
+    delivery:
+      d.impactUpdates.length > 0
+        ? "Delivered"
+        : d.need.deliveries.some((x) => x.verdict === "flagged")
+          ? "Under review"
+          : "On its way",
+    captureId: d.captureId,
+    needId: d.needId,
+  }));
+}

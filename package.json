@@ -22,6 +22,8 @@
     "@channel3/sdk": "^4.5.0",
     "@google/genai": "^2.31.0",
     "@paypal/react-paypal-js": "^10.6.1",
+    "ag-grid-community": "^36.2.0",
+    "ag-grid-react": "^36.2.0",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.3",
     "pg": "^8.23.1",
