@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, Sparkles, X } from "lucide-react";
 import { Logo } from "./logo.tsx";
+import { ThemeToggle } from "./theme-toggle.tsx";
 
 const LINKS = [
   { href: "/", label: "Needs", match: (p: string) => p === "/" || p.startsWith("/needs") },
@@ -49,17 +50,21 @@ function HeaderView({ pathname }: { pathname: string }) {
               </Link>
             );
           })}
+          <ThemeToggle className="ml-1" />
         </div>
 
-        <button
+        <div className="flex items-center gap-1 md:hidden">
+          <ThemeToggle />
+          <button
           type="button"
-          className="rounded-full p-2 text-muted hover:bg-accent-soft hover:text-accent md:hidden"
+          className="rounded-full p-2 text-muted hover:bg-accent-soft hover:text-accent"
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
         >
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+          </button>
+        </div>
       </nav>
 
       {open && (

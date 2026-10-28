@@ -5,7 +5,7 @@ export function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
       <path d="M14 9c0-2 2-2 2-4M20 9c0-2 2-2 2-4M26 9c0-2 2-2 2-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity=".45" />
       <path d="M6 15h28l-2.4 14.2A6 6 0 0 1 25.7 34H14.3a6 6 0 0 1-5.9-4.8Z" fill="var(--accent)" />
       <rect x="4" y="12.5" width="32" height="4" rx="2" fill="var(--foreground)" />
-      <ellipse cx="20" cy="23.5" rx="4.2" ry="3.2" fill="var(--background)" opacity=".9" />
+      <ellipse cx="20" cy="23.5" rx="4.2" ry="3.2" fill="var(--stone)" />
     </svg>
   );
 }

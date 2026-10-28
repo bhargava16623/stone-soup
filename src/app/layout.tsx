@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Fraunces, Geist } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer.tsx";
 import { SiteHeader, SiteHeaderShell } from "@/components/site-header.tsx";
+import { THEME_SCRIPT } from "@/lib/theme.ts";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -15,7 +16,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}>
+    // The theme script sets data-theme before React hydrates, hence suppressHydrationWarning.
+    <html lang="en" className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col font-sans">
         <Suspense fallback={<SiteHeaderShell />}>
           <SiteHeader />

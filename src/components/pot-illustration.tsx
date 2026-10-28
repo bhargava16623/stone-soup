@@ -31,8 +31,8 @@ export function PotIllustration() {
         <rect x="24" y="94" width="152" height="16" rx="8" fill="var(--foreground)" />
         <rect x="14" y="98" width="16" height="8" rx="4" fill="var(--foreground)" />
         <rect x="170" y="98" width="16" height="8" rx="4" fill="var(--foreground)" />
-        <ellipse cx="100" cy="136" rx="16" ry="11" fill="var(--background)" opacity=".9" />
-        <ellipse cx="96" cy="133" rx="5" ry="3" fill="var(--surface)" />
+        <ellipse cx="100" cy="136" rx="16" ry="11" fill="var(--stone)" />
+        <ellipse cx="96" cy="132" rx="5" ry="2.5" fill="#ffffff" opacity=".35" />
       </svg>
       {ITEMS.map(({ icon: Icon, label, className, delay }) => (
         <div

@@ -12,10 +12,15 @@
   --leaf-soft: #dcefe4;
   --amber: #9a6a00;
   --amber-soft: #fbefcc;
+  --plate: #ffffff;
+  --stone: #b9ada0;
+  color-scheme: light;
 }
 
+/* Dark colours apply when the system prefers dark (unless the visitor picked light), or when they picked dark. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --background: #1b1612;
     --surface: #251e18;
     --foreground: #f3ebe0;
@@ -27,7 +32,27 @@
     --leaf-soft: #1e3a2c;
     --amber: #e3b341;
     --amber-soft: #3a2f12;
+    /* Product photos keep a light "plate" so white-background images don't glare as raw boxes. */
+    --plate: #e9e1d5;
+    --stone: #8d8276;
   }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #1b1612;
+  --surface: #251e18;
+  --foreground: #f3ebe0;
+  --muted: #b5a796;
+  --border: #3b3128;
+  --accent: #e07a4d;
+  --accent-soft: #3d2519;
+  --leaf: #6cc196;
+  --leaf-soft: #1e3a2c;
+  --amber: #e3b341;
+  --amber-soft: #3a2f12;
+  /* Product photos keep a light "plate" so white-background images don't glare as raw boxes. */
+  --plate: #e9e1d5;
+  --stone: #8d8276;
 }
 
 @theme inline {
@@ -42,6 +67,7 @@
   --color-leaf-soft: var(--leaf-soft);
   --color-amber: var(--amber);
   --color-amber-soft: var(--amber-soft);
+  --color-plate: var(--plate);
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-fraunces);
 }

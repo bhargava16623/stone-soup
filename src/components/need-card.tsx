@@ -18,7 +18,7 @@ export function NeedCard({ need }: { need: OpenNeed }) {
       className="group flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-sm transition duration-200 hover:-translate-y-1 hover:border-accent/40 hover:shadow-lg"
     >
       <div className="relative bg-gradient-to-b from-background to-surface">
-        <ProductImage src={need.imageUrl} alt={need.catalogItem.name} className="h-44 w-full p-5 transition duration-300 group-hover:scale-105" />
+        <ProductImage src={need.imageUrl} alt={need.catalogItem.name} className="h-52 w-full px-5 pb-4 pt-12 transition duration-300 group-hover:scale-105" />
         <div className="absolute left-4 top-4 flex flex-wrap gap-1.5">
           <UrgencyChip urgency={need.urgency} />
           <FairPriceBadge verdict={need.fairPrice} />
