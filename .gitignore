@@ -1,0 +1,9 @@
+.env
+node_modules/
+.next/
+.spike-orders.json
+# Local planning docs and AI tooling (kept on disk, not in the repo)
+DESIGN.md
+.agents/
+.claude/
+skills-lock.json
