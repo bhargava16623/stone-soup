@@ -20,9 +20,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/" className="font-serif text-2xl font-semibold tracking-tight">
               Stone Soup
             </Link>
-            <Link href="/" className="text-sm text-muted hover:text-foreground">
-              Needs
-            </Link>
+            <div className="flex gap-5 text-sm text-muted">
+              <Link href="/" className="hover:text-foreground">
+                Needs
+              </Link>
+              <Link href="/ngo" className="hover:text-foreground">
+                For organisations
+              </Link>
+            </div>
           </nav>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>

@@ -34,3 +34,19 @@ export async function getNeed(id: number) {
 }
 
 export type NeedWithRelations = NonNullable<Awaited<ReturnType<typeof getNeed>>>;
+
+export async function getNgos() {
+  return db.query.ngos.findMany({ orderBy: (n, { asc }) => [asc(n.name)] });
+}
+
+export async function getNgoDashboard(slug: string) {
+  return db.query.ngos.findFirst({
+    where: (n, { eq }) => eq(n.slug, slug),
+    with: {
+      needs: {
+        orderBy: (n) => [desc(n.createdAt)],
+        with: { vendor: true, catalogItem: true },
+      },
+    },
+  });
+}
