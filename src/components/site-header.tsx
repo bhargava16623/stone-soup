@@ -10,6 +10,7 @@ import { ThemeToggle } from "./theme-toggle.tsx";
 const LINKS = [
   { href: "/", label: "Needs", match: (p: string) => p === "/" || p.startsWith("/needs") },
   { href: "/give", label: "Giving Agent", match: (p: string) => p.startsWith("/give"), icon: true },
+  { href: "/check", label: "Scam Check", match: (p: string) => p.startsWith("/check") },
   { href: "/ledger", label: "Ledger", match: (p: string) => p.startsWith("/ledger") || p.startsWith("/gifts") },
   { href: "/ngo", label: "For organisations", match: (p: string) => p.startsWith("/ngo") },
   { href: "/vendor", label: "For suppliers", match: (p: string) => p.startsWith("/vendor") },
@@ -29,7 +30,7 @@ function HeaderView({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState(false);
 
   const linkClass = (active: boolean) =>
-    `inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm transition-colors ${
+    `inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors ${
       active ? "bg-accent text-white shadow-sm" : "text-muted hover:bg-accent-soft hover:text-accent"
     }`;
 
@@ -40,7 +41,7 @@ function HeaderView({ pathname }: { pathname: string }) {
           <Logo />
         </Link>
 
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center gap-1 lg:flex">
           {LINKS.map((l) => {
             const active = l.match(pathname);
             return (
@@ -53,7 +54,7 @@ function HeaderView({ pathname }: { pathname: string }) {
           <ThemeToggle className="ml-1" />
         </div>
 
-        <div className="flex items-center gap-1 md:hidden">
+        <div className="flex items-center gap-1 lg:hidden">
           <ThemeToggle />
           <button
           type="button"
@@ -68,7 +69,7 @@ function HeaderView({ pathname }: { pathname: string }) {
       </nav>
 
       {open && (
-        <div className="border-t border-border/70 px-4 py-3 md:hidden">
+        <div className="border-t border-border/70 px-4 py-3 lg:hidden">
           <div className="flex flex-col gap-1">
             {LINKS.map((l) => {
               const active = l.match(pathname);

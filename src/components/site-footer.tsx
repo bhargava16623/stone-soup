@@ -7,6 +7,7 @@ const COLUMNS = [
     links: [
       { href: "/", label: "Open needs" },
       { href: "/give", label: "Giving Agent" },
+      { href: "/check", label: "Scam Check" },
       { href: "/ledger", label: "Open ledger" },
     ],
   },
