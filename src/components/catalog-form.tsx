@@ -53,7 +53,7 @@ export function CatalogForm({ vendorSlug }: { vendorSlug: string }) {
           type="button"
           onClick={() => fileInput.current?.click()}
           disabled={reading}
-          className="rounded-full border border-border px-4 py-2 text-sm disabled:opacity-50"
+          className="rounded-full border border-border px-4 py-2 text-sm transition hover:border-accent hover:text-accent disabled:opacity-50"
         >
           {reading ? "Reading your price list…" : "📷 Read a photo of my price list"}
         </button>
@@ -67,7 +67,7 @@ export function CatalogForm({ vendorSlug }: { vendorSlug: string }) {
             <input value={r.spec} onChange={(e) => update(r.key, { spec: e.target.value })} placeholder="Details, e.g. fleece blanket, twin size" aria-label="Details" className="rounded-lg border border-border bg-transparent p-2 text-sm" />
             <input value={r.unit} onChange={(e) => update(r.key, { unit: e.target.value })} placeholder="Per, e.g. blanket" aria-label="Unit" className="rounded-lg border border-border bg-transparent p-2 text-sm" />
             <input value={r.price} onChange={(e) => update(r.key, { price: e.target.value })} placeholder="Price $" inputMode="decimal" aria-label="Price in dollars" className="rounded-lg border border-border bg-transparent p-2 text-sm" />
-            <button type="button" onClick={() => setRows((rs) => (rs.length > 1 ? rs.filter((x) => x.key !== r.key) : [emptyRow()]))} aria-label="Remove row" className="px-2 text-muted hover:text-foreground">
+            <button type="button" onClick={() => setRows((rs) => (rs.length > 1 ? rs.filter((x) => x.key !== r.key) : [emptyRow()]))} aria-label="Remove row" className="px-2 text-muted transition hover:border-accent hover:bg-accent-soft hover:text-accent">
               ×
             </button>
           </div>
@@ -75,14 +75,14 @@ export function CatalogForm({ vendorSlug }: { vendorSlug: string }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => setRows((rs) => [...rs, emptyRow()])} className="text-sm text-muted underline">
+        <button type="button" onClick={() => setRows((rs) => [...rs, emptyRow()])} className="text-sm text-muted underline transition hover:text-accent">
           + Add a row
         </button>
         <button
           type="button"
           onClick={save}
           disabled={saving || !rows.some((r) => r.name.trim() && Number(r.price) > 0)}
-          className="ml-auto rounded-full bg-accent px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="ml-auto rounded-full bg-accent px-5 py-2 text-sm font-medium text-white disabled:opacity-50 transition hover:brightness-110 active:scale-[0.98]"
         >
           {saving ? "Checking market prices…" : "Save items"}
         </button>

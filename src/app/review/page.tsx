@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { ShieldCheck } from "lucide-react";
+import { PageHeader } from "@/components/page-header.tsx";
 import { ProductImage } from "@/components/product-image.tsx";
 import { getFlaggedDeliveries } from "@/lib/delivery.ts";
 import { approveDeliveryAction } from "./actions.ts";
@@ -7,13 +9,10 @@ import { approveDeliveryAction } from "./actions.ts";
 export default function ReviewPage() {
   return (
     <div className="max-w-3xl space-y-6">
-      <header>
-        <h1 className="font-serif text-3xl font-semibold">Review queue</h1>
-        <p className="mt-2 text-muted">
-          Deliveries the photo check wasn&apos;t sure about. Nothing is rejected automatically; a person decides. (Demo: open to
-          everyone.)
-        </p>
-      </header>
+      <PageHeader icon={ShieldCheck} eyebrow="Review queue" title="Deliveries a person should look at">
+        The photo check wasn&apos;t sure about these. Nothing is rejected automatically; a person decides. (Demo: open to
+        everyone.)
+      </PageHeader>
       <Suspense fallback={<p className="text-muted">Loading…</p>}>
         <Queue />
       </Suspense>
@@ -47,7 +46,7 @@ async function Queue() {
                 await approveDeliveryAction(d.id);
               }}
             >
-              <button className="rounded-full bg-leaf px-4 py-1.5 font-medium text-white">Accept delivery</button>
+              <button className="rounded-full bg-leaf px-4 py-1.5 font-medium text-white transition hover:opacity-90">Accept delivery</button>
             </form>
           </div>
         </li>

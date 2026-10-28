@@ -1,15 +1,14 @@
+import { Sparkles } from "lucide-react";
 import { GivingAgent } from "@/components/giving-agent.tsx";
+import { PageHeader } from "@/components/page-header.tsx";
 
 export default function GivePage() {
   return (
-    <div className="space-y-6">
-      <header className="max-w-2xl">
-        <h1 className="font-serif text-3xl font-semibold">Giving Agent</h1>
-        <p className="mt-2 text-muted">
-          Tell it your budget and what you care about. It finds open needs, builds a basket within your budget, and you approve
-          it once in PayPal. Every supplier is paid directly.
-        </p>
-      </header>
+    <div>
+      <PageHeader icon={Sparkles} eyebrow="AI-powered giving" title="Tell the Giving Agent what you care about">
+        It finds open needs, builds a basket within your budget, and you approve it once in PayPal. Every supplier is paid
+        directly.
+      </PageHeader>
       <GivingAgent />
     </div>
   );

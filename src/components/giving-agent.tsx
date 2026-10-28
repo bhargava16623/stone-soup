@@ -88,7 +88,7 @@ export function GivingAgent() {
         {turns.length === 1 && (
           <div className="flex flex-wrap gap-2 px-6 pb-3">
             {STARTERS.map((s) => (
-              <button key={s} type="button" onClick={() => send(s)} className="rounded-full border border-border px-3 py-1 text-xs text-muted hover:text-foreground">
+              <button key={s} type="button" onClick={() => send(s)} className="rounded-full border border-border px-3 py-1 text-xs text-muted transition hover:border-accent hover:bg-accent-soft hover:text-accent">
                 {s}
               </button>
             ))}
@@ -108,7 +108,7 @@ export function GivingAgent() {
             aria-label="Message the Giving Agent"
             className="flex-1 rounded-full border border-border bg-transparent px-4 py-2"
           />
-          <button type="submit" disabled={thinking || !input.trim()} className="rounded-full bg-accent px-5 py-2 font-medium text-white disabled:opacity-50">
+          <button type="submit" disabled={thinking || !input.trim()} className="rounded-full bg-accent px-5 py-2 font-medium text-white disabled:opacity-50 transition hover:brightness-110 active:scale-[0.98]">
             Send
           </button>
         </form>

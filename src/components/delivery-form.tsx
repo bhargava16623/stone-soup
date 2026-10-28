@@ -39,7 +39,7 @@ export function DeliveryForm({ ngoSlug, needId, outstanding, unit, vendorName }:
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="mt-3 rounded-full bg-leaf px-4 py-1.5 text-sm font-medium text-white">
+      <button type="button" onClick={() => setOpen(true)} className="mt-3 rounded-full bg-leaf px-4 py-1.5 text-sm font-medium text-white transition hover:brightness-110 active:scale-[0.98]">
         Confirm delivery from {vendorName}
       </button>
     );
@@ -77,7 +77,7 @@ export function DeliveryForm({ ngoSlug, needId, outstanding, unit, vendorName }:
       </label>
       <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note for donors (optional)" className="w-full rounded-lg border border-border bg-transparent p-2" />
       {error && <p className="text-accent">{error}</p>}
-      <button type="button" onClick={submit} disabled={pending} className="rounded-full bg-leaf px-4 py-1.5 font-medium text-white disabled:opacity-50">
+      <button type="button" onClick={submit} disabled={pending} className="rounded-full bg-leaf px-4 py-1.5 font-medium text-white disabled:opacity-50 transition hover:brightness-110 active:scale-[0.98]">
         {pending ? "Checking the photo…" : "Confirm delivery"}
       </button>
     </div>

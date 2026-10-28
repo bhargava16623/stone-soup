@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Suspense } from "react";
 import { Fraunces, Geist } from "next/font/google";
+import { SiteFooter } from "@/components/site-footer.tsx";
+import { SiteHeader, SiteHeaderShell } from "@/components/site-header.tsx";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -14,35 +16,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">
-        <header className="border-b border-border">
-          <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-            <Link href="/" className="font-serif text-2xl font-semibold tracking-tight">
-              Stone Soup
-            </Link>
-            <div className="flex flex-wrap justify-end gap-x-5 gap-y-1 text-sm text-muted">
-              <Link href="/" className="hover:text-foreground">
-                Needs
-              </Link>
-              <Link href="/give" className="font-medium text-accent hover:text-foreground">
-                Giving Agent
-              </Link>
-              <Link href="/ledger" className="hover:text-foreground">
-                Ledger
-              </Link>
-              <Link href="/ngo" className="hover:text-foreground">
-                For organisations
-              </Link>
-              <Link href="/vendor" className="hover:text-foreground">
-                For suppliers
-              </Link>
-            </div>
-          </nav>
-        </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-        <footer className="border-t border-border py-6 text-center text-xs text-muted">
-          Payments run on the PayPal sandbox. No real money moves.
-        </footer>
+      <body className="flex min-h-full flex-col font-sans">
+        <Suspense fallback={<SiteHeaderShell />}>
+          <SiteHeader />
+        </Suspense>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">{children}</main>
+        <SiteFooter />
       </body>
     </html>
   );

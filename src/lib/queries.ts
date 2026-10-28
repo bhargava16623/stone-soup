@@ -1,5 +1,5 @@
 import "server-only";
-import { desc } from "drizzle-orm";
+import { desc, sql } from "drizzle-orm";
 import { db } from "@/db/index.ts";
 
 const urgencyRank = { high: 0, medium: 1, low: 2 } as const;
@@ -142,4 +142,23 @@ export async function getLedger(): Promise<LedgerRow[]> {
     captureId: d.captureId,
     needId: d.needId,
   }));
+}
+
+/** Headline numbers for the home page. */
+export async function getImpactStats() {
+  const [row] = await db.execute<{ paid: string; items: string; delivered: string; ngos: string; suppliers: string }>(sql`
+    select
+      coalesce((select sum(vendor_amount_cents) from donations where captured), 0) as paid,
+      coalesce((select sum(units) from donations where captured), 0) as items,
+      coalesce((select sum(units) from deliveries where verdict = 'verified'), 0) as delivered,
+      (select count(*) from ngos) as ngos,
+      (select count(*) from vendors) as suppliers
+  `).then((r) => r.rows);
+  return {
+    paidCents: Number(row.paid),
+    itemsFunded: Number(row.items),
+    itemsDelivered: Number(row.delivered),
+    ngos: Number(row.ngos),
+    suppliers: Number(row.suppliers),
+  };
 }

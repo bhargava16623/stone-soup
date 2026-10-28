@@ -68,7 +68,7 @@ export function IntakeForm({ ngoSlug }: { ngoSlug: string }) {
         />
         <div className="mt-2 flex flex-wrap gap-2">
           {EXAMPLES.map((ex) => (
-            <button key={ex} type="button" onClick={() => setText(ex)} className="rounded-full border border-border px-3 py-1 text-left text-xs text-muted hover:text-foreground">
+            <button key={ex} type="button" onClick={() => setText(ex)} className="rounded-full border border-border px-3 py-1 text-left text-xs text-muted transition hover:border-accent hover:bg-accent-soft hover:text-accent">
               {ex.length > 60 ? `${ex.slice(0, 57)}…` : ex}
             </button>
           ))}
@@ -77,7 +77,7 @@ export function IntakeForm({ ngoSlug }: { ngoSlug: string }) {
           type="button"
           onClick={draft}
           disabled={drafting || text.trim().length < 5}
-          className="mt-4 rounded-full bg-accent px-5 py-2.5 font-medium text-white disabled:opacity-50"
+          className="mt-4 rounded-full bg-accent px-5 py-2.5 font-medium text-white disabled:opacity-50 transition hover:brightness-110 active:scale-[0.98]"
         >
           {drafting ? "Reading your request and checking prices…" : "Draft needs"}
         </button>
@@ -157,7 +157,7 @@ export function IntakeForm({ ngoSlug }: { ngoSlug: string }) {
                 {d.options.map((o) => (
                   <label
                     key={o.catalogItemId}
-                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 text-sm ${d.selectedCatalogItemId === o.catalogItemId ? "border-accent bg-accent-soft/40" : "border-border"}`}
+                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 text-sm transition ${d.selectedCatalogItemId === o.catalogItemId ? "border-accent bg-accent-soft/40" : "border-border hover:border-accent/50"}`}
                   >
                     <span className="flex items-center gap-3">
                       <input
@@ -208,7 +208,7 @@ export function IntakeForm({ ngoSlug }: { ngoSlug: string }) {
                   type="button"
                   onClick={() => publish(d)}
                   disabled={publishing || (needsReason && !d.justification.trim())}
-                  className="rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background disabled:opacity-40"
+                  className="rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background disabled:opacity-40 transition hover:brightness-110 active:scale-[0.98]"
                 >
                   Publish
                 </button>

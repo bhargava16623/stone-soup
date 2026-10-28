@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import { Receipt } from "lucide-react";
+import { PageHeader } from "@/components/page-header.tsx";
 import { LedgerGrid } from "@/components/ledger-grid.tsx";
 import { formatUsd } from "@/lib/fees.ts";
 import { getLedger } from "@/lib/queries.ts";
@@ -6,13 +8,10 @@ import { getLedger } from "@/lib/queries.ts";
 export default function LedgerPage() {
   return (
     <div className="space-y-6">
-      <header className="max-w-2xl">
-        <h1 className="font-serif text-3xl font-semibold">Open ledger</h1>
-        <p className="mt-2 text-muted">
-          Every gift on Stone Soup: what it bought, which supplier PayPal paid, whether the price was fair, and whether it
-          arrived. Donors appear by first name only.
-        </p>
-      </header>
+      <PageHeader icon={Receipt} eyebrow="Open ledger" title="Where every gift went">
+        What it bought, which supplier PayPal paid, whether the price was fair, and whether it arrived. Donors appear by first
+        name only.
+      </PageHeader>
       <Suspense fallback={<p className="text-muted">Loading the ledger…</p>}>
         <Ledger />
       </Suspense>
@@ -40,7 +39,7 @@ async function Ledger() {
     <>
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-2xl border border-border bg-surface p-4">
+          <div key={s.label} className="rounded-3xl border border-border bg-surface p-5">
             <dt className="text-xs text-muted">{s.label}</dt>
             <dd className="mt-1 font-serif text-2xl font-semibold">{s.value}</dd>
           </div>

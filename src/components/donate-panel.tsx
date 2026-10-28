@@ -63,7 +63,7 @@ export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining
           <button
             type="button"
             aria-label="Fewer"
-            className="h-10 w-10 rounded-full border border-border text-lg disabled:opacity-40"
+            className="h-10 w-10 rounded-full border border-border text-lg transition hover:border-accent hover:text-accent disabled:opacity-40"
             disabled={units <= 1}
             onClick={() => setUnits((u) => Math.max(1, u - 1))}
           >
@@ -81,7 +81,7 @@ export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining
           <button
             type="button"
             aria-label="More"
-            className="h-10 w-10 rounded-full border border-border text-lg disabled:opacity-40"
+            className="h-10 w-10 rounded-full border border-border text-lg transition hover:border-accent hover:text-accent disabled:opacity-40"
             disabled={units >= remaining}
             onClick={() => setUnits((u) => Math.min(remaining, u + 1))}
           >
@@ -106,7 +106,7 @@ export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining
               key={cents}
               type="button"
               onClick={() => setNgoShareCents(cents)}
-              className={`rounded-full border px-3 py-1 text-sm ${ngoShareCents === cents ? "border-accent bg-accent-soft text-accent" : "border-border"}`}
+              className={`rounded-full border px-3 py-1 text-sm transition ${ngoShareCents === cents ? "border-accent bg-accent-soft text-accent" : "border-border hover:border-accent hover:text-accent"}`}
             >
               {cents === 0 ? "No thanks" : formatUsd(cents)}
             </button>
