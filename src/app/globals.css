@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  --background: #faf6ef;
+  --surface: #ffffff;
+  --foreground: #2b2118;
+  --muted: #74675a;
+  --border: #e8dfd2;
+  --accent: #c2562b; /* terracotta: the soup pot */
+  --accent-soft: #f6e3d8;
+  --leaf: #2f6b4f; /* verified, fair */
+  --leaf-soft: #dcefe4;
+  --amber: #9a6a00;
+  --amber-soft: #fbefcc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #1b1612;
+    --surface: #251e18;
+    --foreground: #f3ebe0;
+    --muted: #b5a796;
+    --border: #3b3128;
+    --accent: #e07a4d;
+    --accent-soft: #3d2519;
+    --leaf: #6cc196;
+    --leaf-soft: #1e3a2c;
+    --amber: #e3b341;
+    --amber-soft: #3a2f12;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-leaf: var(--leaf);
+  --color-leaf-soft: var(--leaf-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-fraunces);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

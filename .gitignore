@@ -4,6 +4,19 @@ node_modules/
 .spike-orders.json
 # Local planning docs and AI tooling (kept on disk, not in the repo)
 DESIGN.md
+PLAN.md
 .agents/
 .claude/
 skills-lock.json
+# Next.js
+/.next/
+/out/
+/build
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
+*.pem
+npm-debug.log*
+# Agent instruction files Next.js generates on `next dev`
+AGENTS.md
+CLAUDE.md

@@ -1,0 +1,14 @@
+# Local Postgres for development (port 5433 to avoid clashing with a system Postgres).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: stonesoup
+      POSTGRES_PASSWORD: stonesoup
+      POSTGRES_DB: stonesoup
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:

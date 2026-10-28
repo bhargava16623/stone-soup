@@ -9,7 +9,7 @@ import { Channel3, type Channel3Api } from "@channel3/sdk";
 
 let client: Channel3 | undefined;
 
-function channel3(): Channel3 {
+export function channel3(): Channel3 {
   if (!client) {
     const apiKey = process.env.CHANNEL3_API_KEY;
     if (!apiKey) throw new Error("CHANNEL3_API_KEY is not set");
@@ -90,7 +90,7 @@ export async function benchmarkPrice(
     query: `${item}. Basic, budget-friendly, everyday version; single unit.`,
     limit,
     filters: { conditions: ["new"], availability: ["InStock"] },
-    config: { mode: "agentic", currency },
+    config: { mode: "agentic", currency: currency as Channel3Api.CurrencyCode },
   });
 
   let samples = page.data.map(toSample).filter((s): s is MarketSample => s !== undefined);
