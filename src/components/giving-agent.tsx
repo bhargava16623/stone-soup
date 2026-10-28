@@ -22,7 +22,7 @@ export function GivingAgent() {
   const [input, setInput] = useState("");
   const [basket, setBasket] = useState<AgentBasket | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ lines: AgentBasket["lines"] } | null>(null);
+  const [done, setDone] = useState<{ lines: AgentBasket["lines"]; orderId: string } | null>(null);
   const [thinking, startThinking] = useTransition();
   const end = useRef<HTMLDivElement>(null);
   const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
@@ -60,6 +60,9 @@ export function GivingAgent() {
           ))}
         </ul>
         <p className="mt-4 text-sm">Each supplier was paid directly through PayPal. You&apos;ll see each delivery once it&apos;s confirmed.</p>
+        <Link href={`/gifts/${done.orderId}`} className="mt-4 inline-block font-medium underline">
+          Follow your gifts →
+        </Link>
       </div>
     );
   }
@@ -166,7 +169,7 @@ export function GivingAgent() {
                       setError(data.error ?? "The payment could not be completed");
                       return;
                     }
-                    setDone({ lines: basket.lines });
+                    setDone({ lines: basket.lines, orderId });
                   }}
                   onError={() => setError("PayPal ran into a problem. Please try again.")}
                 />

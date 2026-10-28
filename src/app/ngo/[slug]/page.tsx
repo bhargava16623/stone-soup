@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { DeliveryForm } from "@/components/delivery-form.tsx";
 import { IntakeForm } from "@/components/intake-form.tsx";
 import { FairPriceBadge } from "@/components/need-bits.tsx";
 import { getNgoDashboard } from "@/lib/queries.ts";
@@ -44,8 +45,17 @@ async function Dashboard({ params }: { params: PageProps<"/ngo/[slug]">["params"
                   <FairPriceBadge verdict={n.fairPrice} />
                 </div>
                 <p className="mt-1 text-muted">
-                  {statusLabel[n.status]} · {n.fundedUnits}/{n.quantity} funded · {n.vendor.name}
+                  {statusLabel[n.status]} · {n.fundedUnits}/{n.quantity} funded · {n.deliveredUnits} delivered · {n.vendor.name}
                 </p>
+                {n.fundedUnits > n.deliveredUnits && (
+                  <DeliveryForm
+                    ngoSlug={ngo.slug}
+                    needId={n.id}
+                    outstanding={n.fundedUnits - n.deliveredUnits}
+                    unit={n.catalogItem.unit}
+                    vendorName={n.vendor.name}
+                  />
+                )}
               </li>
             ))}
           </ul>

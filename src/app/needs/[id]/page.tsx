@@ -61,6 +61,7 @@ async function NeedView({ params }: { params: PageProps<"/needs/[id]">["params"]
           </ol>
         </section>
 
+        <Deliveries need={need} />
         <MarketCheck need={need} />
         <RecentGifts need={need} />
       </article>
@@ -84,6 +85,46 @@ async function NeedView({ params }: { params: PageProps<"/needs/[id]">["params"]
         )}
       </aside>
     </div>
+  );
+}
+
+function Deliveries({ need }: { need: NeedWithRelations }) {
+  if (need.deliveries.length === 0) {
+    if (need.fundedUnits === 0) return null;
+    return (
+      <section className="rounded-2xl border border-border bg-surface p-6">
+        <h2 className="font-serif text-xl font-semibold">Delivery</h2>
+        <p className="mt-2 text-sm text-muted">
+          {need.fundedUnits} {need.catalogItem.unit}
+          {need.fundedUnits === 1 ? " is" : "s are"} paid for and on the way from {need.vendor.name}.
+        </p>
+      </section>
+    );
+  }
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-6">
+      <h2 className="font-serif text-xl font-semibold">Deliveries</h2>
+      <ul className="mt-4 space-y-4">
+        {need.deliveries.map((d) => (
+          <li key={d.id} className="flex gap-4">
+            <ProductImage src={`/api/deliveries/${d.id}/photo`} alt={d.aiSummary ?? "Delivery photo"} fit="cover" className="h-24 w-24 shrink-0 rounded-xl border border-border" />
+            <div className="text-sm">
+              <p className="font-medium">
+                {d.units} {need.catalogItem.unit}
+                {d.units === 1 ? "" : "s"} delivered · {d.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}{" "}
+                {d.verdict === "verified" ? (
+                  <span className="rounded-full bg-leaf-soft px-2 py-0.5 text-xs text-leaf">Verified</span>
+                ) : (
+                  <span className="rounded-full bg-amber-soft px-2 py-0.5 text-xs text-amber">Under review</span>
+                )}
+              </p>
+              {d.aiSummary && <p className="mt-1 text-muted">{d.aiSummary}</p>}
+              {d.note && <p className="mt-1">“{d.note}” — {need.ngo.name}</p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

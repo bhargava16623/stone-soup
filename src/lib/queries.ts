@@ -29,6 +29,10 @@ export async function getNeed(id: number) {
         limit: 10,
         with: { order: true },
       },
+      deliveries: {
+        columns: { photo: false },
+        orderBy: (d) => [desc(d.createdAt)],
+      },
     },
   });
 }
@@ -61,6 +65,22 @@ export async function getVendorDashboard(slug: string) {
     with: {
       catalog: { orderBy: (c, { asc }) => [asc(c.name)] },
       needs: { orderBy: (n) => [desc(n.createdAt)], with: { ngo: true, catalogItem: true } },
+    },
+  });
+}
+
+/** Everything a donor needs to follow their gifts, looked up by PayPal order ID. */
+export async function getOrderForDonor(paypalOrderId: string) {
+  return db.query.orders.findFirst({
+    where: (o, { eq }) => eq(o.paypalOrderId, paypalOrderId),
+    with: {
+      ngoShareNgo: true,
+      donations: {
+        with: {
+          need: { with: { ngo: true, vendor: true, catalogItem: true } },
+          impactUpdates: { with: { delivery: { columns: { photo: false } } } },
+        },
+      },
     },
   });
 }

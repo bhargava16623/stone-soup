@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PayPalOneTimePaymentButton, PayPalProvider } from "@paypal/react-paypal-js/sdk-v6";
@@ -23,7 +24,7 @@ export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining
   const [coverFees, setCoverFees] = useState(true);
   const [ngoShareCents, setNgoShareCents] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [thanks, setThanks] = useState<number | null>(null);
+  const [thanks, setThanks] = useState<{ units: number; orderId: string } | null>(null);
 
   const goodsCents = units * unitPriceCents;
   const feeCents = coverFees ? feeCoverCents(goodsCents) : 0;
@@ -34,15 +35,20 @@ export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining
     return (
       <div className="rounded-2xl border border-leaf/30 bg-leaf-soft p-6 text-leaf">
         <p className="font-serif text-xl font-semibold">
-          You added {thanks} {unitName}
-          {thanks === 1 ? "" : "s"} to the pot.
+          You added {thanks.units} {unitName}
+          {thanks.units === 1 ? "" : "s"} to the pot.
         </p>
         <p className="mt-2 text-sm">
           {vendorName} has been paid directly. We&apos;ll show you the delivery as soon as {ngoName} confirms it.
         </p>
-        <button className="mt-4 text-sm font-medium underline" onClick={() => setThanks(null)}>
-          Give again
-        </button>
+        <div className="mt-4 flex gap-4 text-sm font-medium">
+          <Link href={`/gifts/${thanks.orderId}`} className="underline">
+            Follow your gift
+          </Link>
+          <button className="underline" onClick={() => setThanks(null)}>
+            Give again
+          </button>
+        </div>
       </div>
     );
   }
@@ -159,7 +165,7 @@ export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining
                 setError(data.error ?? "The payment could not be completed");
                 return;
               }
-              setThanks(data.gifts[0].units);
+              setThanks({ units: data.gifts[0].units, orderId });
               setUnits(1);
               router.refresh();
             }}

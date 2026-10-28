@@ -177,12 +177,14 @@ export const deliveries = pgTable(
     note: text(),
     photo: bytea().notNull(),
     photoMime: text().notNull(),
+    // SHA-256 of the photo, to catch the same picture used for two deliveries.
+    photoHash: text().notNull(),
     verdict: deliveryVerdict().notNull().default("pending"),
     aiSummary: text(),
     aiCheck: jsonb().$type<DeliveryCheck>(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index().on(t.needId)],
+  (t) => [index().on(t.needId), index().on(t.photoHash)],
 );
 
 /** Personal message to a donor once their gift was delivered. */
