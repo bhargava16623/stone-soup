@@ -7,6 +7,7 @@ interface Body {
   ngoShare?: { ngoId?: unknown; cents?: unknown } | null;
   source?: unknown;
   agentNote?: unknown;
+  pot?: { id?: unknown; note?: unknown } | null;
 }
 
 /** Create one PayPal order for a basket of needs. Amounts are computed server-side. */
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
       // Labels the order for the ledger only; amounts are still computed server-side.
       source: body.source === "agent" ? "agent" : "direct",
       agentNote: typeof body.agentNote === "string" ? body.agentNote.slice(0, 500) : undefined,
+      pot: body.pot ? { id: Number(body.pot.id), note: typeof body.pot.note === "string" ? body.pot.note : undefined } : undefined,
     });
     return Response.json({ orderId });
   } catch (e) {

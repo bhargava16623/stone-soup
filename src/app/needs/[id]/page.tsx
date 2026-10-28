@@ -1,23 +1,29 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import Link from "next/link";
 import { DonatePanel } from "@/components/donate-panel.tsx";
+import { StartPotForm } from "@/components/start-pot-form.tsx";
+import { getPotsForNeed } from "@/lib/pots.ts";
 import { FairPriceBadge, formatDeadline, FundingProgress, UrgencyChip } from "@/components/need-bits.tsx";
 import { ProductImage } from "@/components/product-image.tsx";
 import { formatUsd } from "@/lib/fees.ts";
 import { getNeed, type NeedWithRelations } from "@/lib/queries.ts";
 
-export default function NeedPage({ params }: PageProps<"/needs/[id]">) {
+export default function NeedPage({ params, searchParams }: PageProps<"/needs/[id]">) {
   return (
     <Suspense fallback={<p className="text-muted">Loading…</p>}>
-      <NeedView params={params} />
+      <NeedView params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function NeedView({ params }: { params: PageProps<"/needs/[id]">["params"] }) {
+async function NeedView({ params, searchParams }: Pick<PageProps<"/needs/[id]">, "params" | "searchParams">) {
   const { id } = await params;
+  // `?units=N` pre-fills the donate panel, e.g. from a "finish it" suggestion.
+  const initialUnits = Number((await searchParams).units) || 1;
   const need = await getNeed(Number(id));
   if (!need) notFound();
+  const pots = await getPotsForNeed(need.id);
 
   const remaining = need.quantity - need.fundedUnits;
   const unit = need.catalogItem.unit;
@@ -66,9 +72,16 @@ async function NeedView({ params }: { params: PageProps<"/needs/[id]">["params"]
         <RecentGifts need={need} />
       </article>
 
-      <aside className="lg:sticky lg:top-6 lg:self-start">
+      <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+        {need.status === "open" && remaining > 0 && remaining <= Math.max(3, need.quantity * 0.2) && (
+          <p className="rounded-2xl bg-amber-soft p-4 text-sm text-amber">
+            <span className="font-semibold">Almost there:</span> only {remaining} {unit}
+            {remaining === 1 ? "" : "s"} left. You could finish this pot.
+          </p>
+        )}
         {need.status === "open" && remaining > 0 ? (
           <DonatePanel
+            initialUnits={initialUnits}
             needId={need.id}
             ngoId={need.ngoId}
             unitName={unit}
@@ -81,6 +94,24 @@ async function NeedView({ params }: { params: PageProps<"/needs/[id]">["params"]
           <div className="rounded-2xl border border-leaf/30 bg-leaf-soft p-6 text-leaf">
             <p className="font-serif text-xl font-semibold">Fully funded</p>
             <p className="mt-2 text-sm">Thank you to everyone who added to the pot.</p>
+          </div>
+        )}
+        {need.status === "open" && remaining > 1 && (
+          <StartPotForm needId={need.id} remaining={remaining} unit={unit} ngoName={need.ngo.name} />
+        )}
+        {pots.length > 0 && (
+          <div className="rounded-2xl border border-border bg-surface p-5 text-sm">
+            <p className="font-semibold">Group pots for this need</p>
+            <ul className="mt-2 space-y-1.5">
+              {pots.map((p) => (
+                <li key={p.id}>
+                  <Link href={`/pot/${p.slug}`} className="text-accent hover:underline">
+                    {p.title}
+                  </Link>{" "}
+                  <span className="text-muted">by {p.organizerName}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </aside>

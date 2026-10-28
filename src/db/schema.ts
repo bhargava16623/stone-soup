@@ -132,6 +132,9 @@ export const orders = pgTable("orders", {
   agentNote: text(),
   // Set when this checkout pays a Soup Club monthly basket.
   clubBasketId: integer(),
+  // Set when this checkout adds to a group pot, with an optional note shown on the pot page.
+  potId: integer(),
+  potNote: text(),
   donorName: text(),
   donorEmail: text(),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -208,6 +211,23 @@ export const impactUpdates = pgTable(
   (t) => [index().on(t.donationId)],
 );
 
+/** A group pot: friends, a team or a class pooling gifts toward one need via a share link. */
+export const pots = pgTable(
+  "pots",
+  {
+    id: serial().primaryKey(),
+    slug: text().notNull().unique(),
+    needId: integer()
+      .notNull()
+      .references(() => needs.id),
+    title: text().notNull(),
+    organizerName: text().notNull(),
+    goalUnits: integer().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index().on(t.needId)],
+);
+
 /** Soup Club: a donor's standing monthly budget, managed through a private link (no logins). */
 export const clubMembers = pgTable("club_members", {
   id: serial().primaryKey(),
@@ -268,6 +288,9 @@ export const impactUpdatesRelations = relations(impactUpdates, ({ one }) => ({
   delivery: one(deliveries, { fields: [impactUpdates.deliveryId], references: [deliveries.id] }),
 }));
 
+export const potsRelations = relations(pots, ({ one }) => ({
+  need: one(needs, { fields: [pots.needId], references: [needs.id] }),
+}));
 export const clubMembersRelations = relations(clubMembers, ({ many }) => ({ baskets: many(clubBaskets) }));
 export const clubBasketsRelations = relations(clubBaskets, ({ one }) => ({
   member: one(clubMembers, { fields: [clubBaskets.memberId], references: [clubMembers.id] }),
@@ -281,5 +304,6 @@ export type Order = typeof orders.$inferSelect;
 export type Donation = typeof donations.$inferSelect;
 export type Delivery = typeof deliveries.$inferSelect;
 export type ImpactUpdate = typeof impactUpdates.$inferSelect;
+export type Pot = typeof pots.$inferSelect;
 export type ClubMember = typeof clubMembers.$inferSelect;
 export type ClubBasket = typeof clubBaskets.$inferSelect;

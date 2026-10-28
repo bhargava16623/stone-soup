@@ -86,10 +86,15 @@ export interface StartCheckoutInput {
   source?: "direct" | "agent";
   agentNote?: string;
   clubBasketId?: number;
+  pot?: { id: number; note?: string };
 }
 
-export async function startCheckout({ items, coverFees = false, ngoShare, source = "direct", agentNote, clubBasketId }: StartCheckoutInput) {
+export async function startCheckout({ items, coverFees = false, ngoShare, source = "direct", agentNote, clubBasketId, pot }: StartCheckoutInput) {
   const basket = await priceBasket(items, coverFees);
+  if (pot) {
+    const row = await db.query.pots.findFirst({ where: (p, { eq }) => eq(p.id, pot.id) });
+    if (!row || items.length !== 1 || items[0].needId !== row.needId) throw new DonationError("This pot is for a different need");
+  }
 
   const units: PurchaseUnit[] = basket.lines.map((l) => ({
     referenceId: `need_${l.needId}`,
@@ -122,7 +127,17 @@ export async function startCheckout({ items, coverFees = false, ngoShare, source
   await db.transaction(async (tx) => {
     const [order] = await tx
       .insert(schema.orders)
-      .values({ paypalOrderId, source, coverFees, ngoShareNgoId: shareNgoId, ngoShareCents: shareCents, agentNote, clubBasketId })
+      .values({
+        paypalOrderId,
+        source,
+        coverFees,
+        ngoShareNgoId: shareNgoId,
+        ngoShareCents: shareCents,
+        agentNote,
+        clubBasketId,
+        potId: pot?.id,
+        potNote: pot?.note?.trim().slice(0, 140) || null,
+      })
       .returning();
     await tx.insert(schema.donations).values(
       basket.lines.map((l) => ({

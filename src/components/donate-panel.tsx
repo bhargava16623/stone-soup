@@ -14,13 +14,18 @@ interface Props {
   remaining: number;
   ngoName: string;
   vendorName: string;
+  /** Starting quantity, e.g. the units left when a donor follows a "finish it" link. */
+  initialUnits?: number;
+  /** When set, gifts count toward this group pot and the donor can leave a note. */
+  pot?: { id: number; title: string };
 }
 
 const NGO_SHARE_OPTIONS = [0, MIN_NGO_SHARE_CENTS, 1000];
 
-export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining, ngoName, vendorName }: Props) {
+export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining, ngoName, vendorName, initialUnits = 1, pot }: Props) {
   const router = useRouter();
-  const [units, setUnits] = useState(1);
+  const [units, setUnits] = useState(Math.min(remaining, Math.max(1, initialUnits)));
+  const [potNote, setPotNote] = useState("");
   const [coverFees, setCoverFees] = useState(true);
   const [ngoShareCents, setNgoShareCents] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +41,7 @@ export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining
       <div className="rounded-2xl border border-leaf/30 bg-leaf-soft p-6 text-leaf">
         <p className="font-serif text-xl font-semibold">
           You added {thanks.units} {unitName}
-          {thanks.units === 1 ? "" : "s"} to the pot.
+          {thanks.units === 1 ? "" : "s"} to {pot ? `“${pot.title}”` : "the pot"}.
         </p>
         <p className="mt-2 text-sm">
           {vendorName} has been paid directly. We&apos;ll show you the delivery as soon as {ngoName} confirms it.
@@ -114,6 +119,19 @@ export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining
         </div>
       </fieldset>
 
+      {pot && (
+        <label className="block text-sm">
+          <span className="font-medium">Leave a note on the pot (optional)</span>
+          <input
+            value={potNote}
+            onChange={(e) => setPotNote(e.target.value)}
+            maxLength={140}
+            placeholder="e.g. From the 3rd floor team!"
+            className="mt-1 w-full rounded-lg border border-border bg-transparent p-2"
+          />
+        </label>
+      )}
+
       <dl className="space-y-1 border-t border-border pt-4 text-sm">
         <div className="flex justify-between">
           <dt className="text-muted">
@@ -149,6 +167,7 @@ export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining
                   items: [{ needId, units }],
                   coverFees,
                   ngoShare: ngoShareCents > 0 ? { ngoId, cents: ngoShareCents } : null,
+                  pot: pot ? { id: pot.id, note: potNote } : null,
                 }),
               });
               const data = await res.json();

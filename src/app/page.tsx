@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRight, Camera, HandHeart, ScanSearch, ShieldCheck, Sparkles, Store } from "lucide-react";
+import { FinishIt } from "@/components/finish-it.tsx";
 import { NeedCard } from "@/components/need-card.tsx";
 import { PotIllustration } from "@/components/pot-illustration.tsx";
 import { formatUsd } from "@/lib/fees.ts";
-import { getImpactStats, getOpenNeeds } from "@/lib/queries.ts";
+import { getAlmostFunded, getImpactStats, getOpenNeeds } from "@/lib/queries.ts";
 
 const STEPS = [
   { icon: HandHeart, title: "A charity asks", text: "In plain words. AI turns it into specific items and quantities." },
@@ -70,6 +71,10 @@ export default function Home() {
         </ol>
       </section>
 
+      <Suspense fallback={null}>
+        <AlmostThere />
+      </Suspense>
+
       <section id="needs" className="scroll-mt-24">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -86,6 +91,10 @@ export default function Home() {
       </section>
     </div>
   );
+}
+
+async function AlmostThere() {
+  return <FinishIt items={await getAlmostFunded()} />;
 }
 
 async function ImpactStrip() {

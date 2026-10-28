@@ -162,3 +162,14 @@ export async function getImpactStats() {
     suppliers: Number(row.suppliers),
   };
 }
+
+/** Open needs that are close to done, so a donor can finish them (≤ 20% or ≤ 3 units left, and already started). */
+export async function getAlmostFunded(limit = 3, excludeNeedIds: number[] = []) {
+  const needs = await getOpenNeeds();
+  return needs
+    .filter((n) => !excludeNeedIds.includes(n.id))
+    .map((n) => ({ need: n, left: n.quantity - n.fundedUnits }))
+    .filter(({ need, left }) => need.fundedUnits > 0 && left > 0 && left <= Math.max(3, Math.ceil(need.quantity * 0.2)))
+    .sort((a, b) => a.left * a.need.unitPriceCents - b.left * b.need.unitPriceCents)
+    .slice(0, limit);
+}

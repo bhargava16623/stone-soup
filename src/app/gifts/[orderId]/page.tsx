@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { FinishIt } from "@/components/finish-it.tsx";
 import { ProductImage } from "@/components/product-image.tsx";
 import { formatUsd } from "@/lib/fees.ts";
-import { getOrderForDonor } from "@/lib/queries.ts";
+import { getAlmostFunded, getOrderForDonor } from "@/lib/queries.ts";
 
 export default function GiftsPage({ params }: PageProps<"/gifts/[orderId]">) {
   return (
@@ -18,6 +19,8 @@ async function Gifts({ params }: { params: PageProps<"/gifts/[orderId]">["params
   const order = await getOrderForDonor(orderId);
   if (!order || order.status !== "captured") notFound();
   const firstName = order.donorName?.split(" ")[0];
+  // Suggest finishing other needs, not the ones this order already funded.
+  const nextStones = await getAlmostFunded(3, order.donations.map((d) => d.needId));
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -62,6 +65,9 @@ async function Gifts({ params }: { params: PageProps<"/gifts/[orderId]">["params
           );
         })}
       </ul>
+      <div className="pt-6">
+        <FinishIt items={nextStones} title="Your next stone: finish one of these" />
+      </div>
       {order.ngoShareCents > 0 && order.ngoShareNgo && (
         <p className="text-sm text-muted">
           Plus {formatUsd(order.ngoShareCents)} to {order.ngoShareNgo.name} to spend where it&apos;s needed most.
