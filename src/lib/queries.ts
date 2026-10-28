@@ -50,3 +50,17 @@ export async function getNgoDashboard(slug: string) {
     },
   });
 }
+
+export async function getVendors() {
+  return db.query.vendors.findMany({ orderBy: (v, { asc }) => [asc(v.name)] });
+}
+
+export async function getVendorDashboard(slug: string) {
+  return db.query.vendors.findFirst({
+    where: (v, { eq }) => eq(v.slug, slug),
+    with: {
+      catalog: { orderBy: (c, { asc }) => [asc(c.name)] },
+      needs: { orderBy: (n) => [desc(n.createdAt)], with: { ngo: true, catalogItem: true } },
+    },
+  });
+}

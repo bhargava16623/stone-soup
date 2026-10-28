@@ -39,12 +39,14 @@ const [hope, riverbend] = await db
   ])
   .returning();
 
-// Both demo vendors pay out to the same sandbox business account.
+// All demo vendors pay out to the same sandbox business account.
+// Northside starts with an empty catalog to demo onboarding from a price-list photo.
 const [sunrise, harbor] = await db
   .insert(schema.vendors)
   .values([
     { slug: "sunrise-supplies", name: "Sunrise Supplies", city: "Tacoma", country: "US", paypalEmail: vendorEmail, trustScore: 72 },
     { slug: "harbor-wholesale", name: "Harbor Wholesale", city: "Seattle", country: "US", paypalEmail: vendorEmail, trustScore: 64 },
+    { slug: "northside-wholesale", name: "Northside Wholesale", city: "Spokane", country: "US", paypalEmail: vendorEmail, trustScore: 50 },
   ])
   .returning();
 

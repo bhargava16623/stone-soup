@@ -27,6 +27,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/ngo" className="hover:text-foreground">
                 For organisations
               </Link>
+              <Link href="/vendor" className="hover:text-foreground">
+                For suppliers
+              </Link>
             </div>
           </nav>
         </header>
