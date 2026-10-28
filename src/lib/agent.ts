@@ -5,6 +5,7 @@ import "server-only";
 import { Type, type Content, type FunctionDeclaration } from "@google/genai";
 import { getOpenNeeds } from "./queries.ts";
 import { DonationError, priceBasket, type BasketItem, type BasketLine } from "./donations.ts";
+import { feeCoverCents } from "./fees.ts";
 import { generateResponse } from "./gemini.ts";
 
 export interface ChatMessage {
@@ -41,7 +42,8 @@ How to work:
 3. Build a basket with propose_basket. The server prices it (unit price × units, plus PayPal fee cover)
    and rejects it if it's invalid. If it is rejected or over budget, adjust and propose again.
 4. Prefer, in order: what the donor asked for; urgent needs and near deadlines; needs close to being
-   fully funded (so they can be completed); fairly priced items. Spread across needs when the budget allows.
+   fully funded (so they can be completed); fairly priced items. If the donor names several causes, cover
+   each of them before adding extra units to any one need, whenever the budget allows.
 5. Stay within the budget, and use most of it. The total includes PayPal fee cover, charged per need line
    (about 3.5% plus 49 cents each), so fewer lines with more units stretch the budget further. When the server
    reports budget_left_cents and another unit of a chosen need fits, propose again with it added.
@@ -75,7 +77,10 @@ const tools: FunctionDeclaration[] = [
             required: ["need_id", "units"],
           },
         },
-        rationale: { type: Type.STRING, description: "One or two sentences on why these needs, for the donor." },
+        rationale: {
+          type: Type.STRING,
+          description: "One or two sentences for the donor on why this whole basket fits what they asked for (not about revisions).",
+        },
       },
       required: ["budget_cents", "items", "rationale"],
     },
@@ -90,6 +95,8 @@ async function searchNeeds() {
     organisation: `${n.ngo.name} (${n.ngo.city})`,
     item: n.catalogItem.name,
     unit_price_cents: n.unitPriceCents,
+    // Cost of one unit on its own line, including PayPal fee cover, so the agent can do budget arithmetic.
+    one_unit_with_fees_cents: n.unitPriceCents + feeCoverCents(n.unitPriceCents),
     units_remaining: n.quantity - n.fundedUnits,
     units_total: n.quantity,
     urgency: n.urgency,

@@ -11,6 +11,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // All money is stored as integer cents in `currency` (USD for now).
@@ -23,6 +24,7 @@ export const fairPrice = pgEnum("fair_price", ["fair", "below_market", "above_ma
 export const orderStatus = pgEnum("order_status", ["created", "captured", "failed"]);
 export const orderSource = pgEnum("order_source", ["direct", "agent"]);
 export const deliveryVerdict = pgEnum("delivery_verdict", ["pending", "verified", "flagged"]);
+export const clubBasketStatus = pgEnum("club_basket_status", ["ready", "paid", "skipped"]);
 
 export const ngos = pgTable("ngos", {
   id: serial().primaryKey(),
@@ -128,6 +130,8 @@ export const orders = pgTable("orders", {
   ngoCaptureId: text(),
   // What the Giving Agent told the donor about its choices.
   agentNote: text(),
+  // Set when this checkout pays a Soup Club monthly basket.
+  clubBasketId: integer(),
   donorName: text(),
   donorEmail: text(),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -204,6 +208,36 @@ export const impactUpdates = pgTable(
   (t) => [index().on(t.donationId)],
 );
 
+/** Soup Club: a donor's standing monthly budget, managed through a private link (no logins). */
+export const clubMembers = pgTable("club_members", {
+  id: serial().primaryKey(),
+  token: text().notNull().unique(),
+  name: text().notNull(),
+  monthlyBudgetCents: integer().notNull(),
+  causes: text().notNull(),
+  active: boolean().notNull().default(true),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
+/** The basket the Giving Agent prepared for one member for one month, waiting for approval. */
+export const clubBaskets = pgTable(
+  "club_baskets",
+  {
+    id: serial().primaryKey(),
+    memberId: integer()
+      .notNull()
+      .references(() => clubMembers.id),
+    month: text().notNull(), // YYYY-MM
+    items: jsonb().$type<{ needId: number; units: number }[]>().notNull(),
+    rationale: text().notNull(),
+    totalCents: integer().notNull(),
+    status: clubBasketStatus().notNull().default("ready"),
+    paypalOrderId: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index().on(t.memberId), uniqueIndex().on(t.memberId, t.month)],
+);
+
 export const ngosRelations = relations(ngos, ({ many }) => ({ needs: many(needs) }));
 export const vendorsRelations = relations(vendors, ({ many }) => ({ catalog: many(catalogItems), needs: many(needs) }));
 export const catalogItemsRelations = relations(catalogItems, ({ one }) => ({
@@ -234,6 +268,11 @@ export const impactUpdatesRelations = relations(impactUpdates, ({ one }) => ({
   delivery: one(deliveries, { fields: [impactUpdates.deliveryId], references: [deliveries.id] }),
 }));
 
+export const clubMembersRelations = relations(clubMembers, ({ many }) => ({ baskets: many(clubBaskets) }));
+export const clubBasketsRelations = relations(clubBaskets, ({ one }) => ({
+  member: one(clubMembers, { fields: [clubBaskets.memberId], references: [clubMembers.id] }),
+}));
+
 export type Ngo = typeof ngos.$inferSelect;
 export type Vendor = typeof vendors.$inferSelect;
 export type CatalogItem = typeof catalogItems.$inferSelect;
@@ -242,3 +281,5 @@ export type Order = typeof orders.$inferSelect;
 export type Donation = typeof donations.$inferSelect;
 export type Delivery = typeof deliveries.$inferSelect;
 export type ImpactUpdate = typeof impactUpdates.$inferSelect;
+export type ClubMember = typeof clubMembers.$inferSelect;
+export type ClubBasket = typeof clubBaskets.$inferSelect;

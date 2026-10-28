@@ -15,6 +15,13 @@
       "when": 1793214437171,
       "tag": "0001_dry_revanche",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793219238516,
+      "tag": "0002_short_toxin",
+      "breakpoints": true
     }
   ]
 }

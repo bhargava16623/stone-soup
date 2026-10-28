@@ -9,7 +9,7 @@ import { ThemeToggle } from "./theme-toggle.tsx";
 
 const LINKS = [
   { href: "/", label: "Needs", match: (p: string) => p === "/" || p.startsWith("/needs") },
-  { href: "/give", label: "Giving Agent", match: (p: string) => p.startsWith("/give"), icon: true },
+  { href: "/give", label: "Giving Agent", match: (p: string) => p.startsWith("/give") || p.startsWith("/club"), icon: true },
   { href: "/check", label: "Scam Check", match: (p: string) => p.startsWith("/check") },
   { href: "/ledger", label: "Ledger", match: (p: string) => p.startsWith("/ledger") || p.startsWith("/gifts") },
   { href: "/ngo", label: "For organisations", match: (p: string) => p.startsWith("/ngo") },

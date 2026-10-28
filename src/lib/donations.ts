@@ -85,9 +85,10 @@ export interface StartCheckoutInput {
   ngoShare?: { ngoId: number; cents: number };
   source?: "direct" | "agent";
   agentNote?: string;
+  clubBasketId?: number;
 }
 
-export async function startCheckout({ items, coverFees = false, ngoShare, source = "direct", agentNote }: StartCheckoutInput) {
+export async function startCheckout({ items, coverFees = false, ngoShare, source = "direct", agentNote, clubBasketId }: StartCheckoutInput) {
   const basket = await priceBasket(items, coverFees);
 
   const units: PurchaseUnit[] = basket.lines.map((l) => ({
@@ -121,7 +122,7 @@ export async function startCheckout({ items, coverFees = false, ngoShare, source
   await db.transaction(async (tx) => {
     const [order] = await tx
       .insert(schema.orders)
-      .values({ paypalOrderId, source, coverFees, ngoShareNgoId: shareNgoId, ngoShareCents: shareCents, agentNote })
+      .values({ paypalOrderId, source, coverFees, ngoShareNgoId: shareNgoId, ngoShareCents: shareCents, agentNote, clubBasketId })
       .returning();
     await tx.insert(schema.donations).values(
       basket.lines.map((l) => ({
@@ -181,6 +182,12 @@ export async function completeCheckout(paypalOrderId: string) {
           status: sql`case when ${schema.needs.fundedUnits} + ${d.units} >= ${schema.needs.quantity} then 'funded'::need_status else ${schema.needs.status} end`,
         })
         .where(eq(schema.needs.id, d.needId));
+    }
+    if (order.clubBasketId) {
+      await tx
+        .update(schema.clubBaskets)
+        .set({ status: "paid", paypalOrderId })
+        .where(eq(schema.clubBaskets.id, order.clubBasketId));
     }
     return { ...updated, donations: order.donations };
   });
