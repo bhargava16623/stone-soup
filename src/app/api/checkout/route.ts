@@ -5,6 +5,8 @@ interface Body {
   items?: { needId?: unknown; units?: unknown }[];
   coverFees?: unknown;
   ngoShare?: { ngoId?: unknown; cents?: unknown } | null;
+  source?: unknown;
+  agentNote?: unknown;
 }
 
 /** Create one PayPal order for a basket of needs. Amounts are computed server-side. */
@@ -17,6 +19,9 @@ export async function POST(request: Request) {
       items: body.items.map((i) => ({ needId: Number(i.needId), units: Number(i.units) })),
       coverFees: body.coverFees === true,
       ngoShare: body.ngoShare ? { ngoId: Number(body.ngoShare.ngoId), cents: Number(body.ngoShare.cents) } : undefined,
+      // Labels the order for the ledger only; amounts are still computed server-side.
+      source: body.source === "agent" ? "agent" : "direct",
+      agentNote: typeof body.agentNote === "string" ? body.agentNote.slice(0, 500) : undefined,
     });
     return Response.json({ orderId });
   } catch (e) {

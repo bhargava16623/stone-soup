@@ -19,6 +19,9 @@ export default function Home() {
           Fund a blanket, a backpack, a bag of rice. Your gift is paid straight to the supplier through PayPal, checked
           against market prices, and confirmed when it&apos;s delivered.
         </p>
+        <Link href="/give" className="mt-6 inline-block rounded-full bg-accent px-5 py-2.5 font-medium text-white">
+          Not sure what to fund? Ask the Giving Agent →
+        </Link>
       </section>
 
       <h2 className="mb-4 font-serif text-2xl font-semibold">Open needs</h2>

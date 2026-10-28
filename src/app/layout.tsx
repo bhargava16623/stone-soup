@@ -24,6 +24,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/" className="hover:text-foreground">
                 Needs
               </Link>
+              <Link href="/give" className="font-medium text-accent hover:text-foreground">
+                Giving Agent
+              </Link>
               <Link href="/ngo" className="hover:text-foreground">
                 For organisations
               </Link>

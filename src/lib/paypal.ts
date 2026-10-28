@@ -28,12 +28,13 @@ async function accessToken(): Promise<string> {
 }
 
 export class PayPalError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly body: unknown,
-  ) {
+  readonly status: number;
+  readonly body: unknown;
+
+  constructor(message: string, status: number, body: unknown) {
     super(`${message} (${status})`);
+    this.status = status;
+    this.body = body;
   }
 }
 

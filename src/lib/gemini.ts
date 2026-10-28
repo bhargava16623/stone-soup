@@ -3,7 +3,7 @@
 // The newest Flash models regularly return 503 "high demand" or hang, so every call
 // goes through a fallback chain with a per-attempt timeout. The demo must not die
 // because one model is overloaded. The API key is read from GEMINI_API_KEY (server-side only).
-import { GoogleGenAI, type GenerateContentConfig, type Schema } from "@google/genai";
+import { GoogleGenAI, type GenerateContentConfig, type GenerateContentResponse, type Schema } from "@google/genai";
 
 let client: GoogleGenAI | undefined;
 
@@ -39,30 +39,45 @@ export interface GenerateResult {
   model: string;
 }
 
-/** Generate text, falling through the model chain on overload, timeout, or empty output. */
-export async function generate(
-  contents: Parameters<GoogleGenAI["models"]["generateContent"]>[0]["contents"],
+type Contents = Parameters<GoogleGenAI["models"]["generateContent"]>[0]["contents"];
+
+/**
+ * Call Gemini, falling through the model chain on overload, timeout, or an unusable response.
+ * Pass `model` to pin one model (needed mid-conversation: Gemini 3 thought signatures
+ * from one model can't be sent to another).
+ */
+export async function generateResponse(
+  contents: Contents,
   { system, config }: GenerateOptions = {},
-): Promise<GenerateResult> {
+  { model: pinned, usable = (r) => Boolean(r.candidates?.[0]?.content) }: { model?: string; usable?: (r: GenerateContentResponse) => boolean } = {},
+): Promise<{ response: GenerateContentResponse; model: string }> {
   const errors: string[] = [];
   const now = Date.now();
-  const available = [...new Set(MODELS)].filter((m) => (coolingUntil.get(m) ?? 0) <= now);
+  const all = [...new Set(MODELS)];
+  const available = all.filter((m) => (coolingUntil.get(m) ?? 0) <= now);
   // If every model is cooling down, try them all anyway rather than failing outright.
-  for (const model of available.length ? available : [...new Set(MODELS)]) {
+  const chain = pinned ? [pinned] : available.length ? available : all;
+  for (const model of chain) {
     try {
-      const res = await gemini().models.generateContent({
+      const response = await gemini().models.generateContent({
         model,
         contents,
         config: { ...config, systemInstruction: system, abortSignal: AbortSignal.timeout(ATTEMPT_TIMEOUT_MS) },
       });
-      if (res.text) return { text: res.text, model };
-      errors.push(`${model}: empty response`);
+      if (usable(response)) return { response, model };
+      errors.push(`${model}: unusable response`);
     } catch (e) {
       if (isTransient(e)) coolingUntil.set(model, Date.now() + COOLDOWN_MS);
       errors.push(`${model}: ${(e as Error).message.slice(0, 120)}`);
     }
   }
   throw new Error(`All Gemini models failed:\n  ${errors.join("\n  ")}`);
+}
+
+/** Generate text, falling through the model chain on overload, timeout, or empty output. */
+export async function generate(contents: Contents, options: GenerateOptions = {}): Promise<GenerateResult> {
+  const { response, model } = await generateResponse(contents, options, { usable: (r) => Boolean(r.text) });
+  return { text: response.text!, model };
 }
 
 /** Generate JSON that matches `schema` and parse it. */
