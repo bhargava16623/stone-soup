@@ -118,3 +118,30 @@ body {
   .animate-steam { animation: steam 3.2s ease-in-out infinite; }
   .animate-bob { animation: bob 5s ease-in-out infinite; }
 }
+
+/* Printing a report: plain page, no site chrome or buttons. */
+@media print {
+  :root,
+  :root[data-theme="dark"] {
+    color-scheme: light;
+    --background: #ffffff;
+    --surface: #ffffff;
+    --foreground: #1a1410;
+    --muted: #5c5148;
+    --border: #ddd3c6;
+  }
+  body {
+    background-image: none;
+  }
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+}

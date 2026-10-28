@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FileText } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { DeliveryForm } from "@/components/delivery-form.tsx";
@@ -31,7 +32,15 @@ async function Dashboard({ params }: { params: PageProps<"/ngo/[slug]">["params"
       </section>
 
       <section>
-        <h2 className="mb-3 font-serif text-xl font-semibold">Your needs</h2>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="font-serif text-xl font-semibold">Your needs</h2>
+          <Link
+            href={`/ngo/${ngo.slug}/report`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm transition hover:border-accent hover:text-accent"
+          >
+            <FileText className="h-4 w-4" /> Funder report
+          </Link>
+        </div>
         {ngo.needs.length === 0 ? (
           <p className="text-sm text-muted">Nothing posted yet.</p>
         ) : (
