@@ -24,9 +24,10 @@ export async function getNeed(id: number) {
       vendor: true,
       catalogItem: true,
       donations: {
-        where: (d, { eq }) => eq(d.status, "captured"),
-        orderBy: (d) => [desc(d.capturedAt)],
+        where: (d, { eq }) => eq(d.captured, true),
+        orderBy: (d) => [desc(d.id)],
         limit: 10,
+        with: { order: true },
       },
     },
   });

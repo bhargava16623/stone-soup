@@ -57,53 +57,43 @@ async function api<T>(method: string, path: string, body?: unknown, requestId?: 
 
 const usd = (cents: number) => ({ currency_code: "USD", value: (cents / 100).toFixed(2) });
 
-export interface DonationOrderInput {
-  needId: number;
-  description: string; // shown to the donor in PayPal, e.g. "2 × fleece blanket for Hope Shelter"
-  vendorEmail: string;
-  vendorAmountCents: number; // includes fee cover, if any
-  ngoEmail: string;
-  ngoShareCents: number; // 0 for none
-  requestId: string;
+/** PayPal allows at most 10 purchase units per order. */
+export const MAX_PURCHASE_UNITS = 10;
+
+export interface PurchaseUnit {
+  referenceId: string; // unique within the order, e.g. "need_12" or "ngo_gift"
+  description: string; // shown to the donor in PayPal
+  amountCents: number;
+  payeeEmail: string; // who receives this part of the payment
 }
 
-/** Create an order paying the vendor (and optionally the NGO). Returns the PayPal order ID. */
-export async function createDonationOrder(input: DonationOrderInput): Promise<string> {
-  const units = [
-    {
-      reference_id: "vendor",
-      custom_id: `need_${input.needId}`,
-      description: input.description.slice(0, 127),
-      amount: usd(input.vendorAmountCents),
-      payee: { email_address: input.vendorEmail },
-    },
-  ];
-  if (input.ngoShareCents > 0) {
-    units.push({
-      reference_id: "ngo",
-      custom_id: `need_${input.needId}`,
-      description: "Unrestricted support for the organisation",
-      amount: usd(input.ngoShareCents),
-      payee: { email_address: input.ngoEmail },
-    });
+/** Create one order that pays each purchase unit to its own payee. Returns the PayPal order ID. */
+export async function createOrder(units: PurchaseUnit[], requestId: string): Promise<string> {
+  if (units.length === 0 || units.length > MAX_PURCHASE_UNITS) {
+    throw new Error(`An order needs 1–${MAX_PURCHASE_UNITS} purchase units`);
   }
   const order = await api<{ id: string }>(
     "POST",
     "/v2/checkout/orders",
     {
       intent: "CAPTURE",
-      purchase_units: units,
+      purchase_units: units.map((u) => ({
+        reference_id: u.referenceId,
+        description: u.description.slice(0, 127),
+        amount: usd(u.amountCents),
+        payee: { email_address: u.payeeEmail },
+      })),
       payment_source: {
         paypal: { experience_context: { shipping_preference: "NO_SHIPPING", user_action: "PAY_NOW" } },
       },
     },
-    input.requestId,
+    requestId,
   );
   return order.id;
 }
 
 export interface CapturedUnit {
-  referenceId: "vendor" | "ngo";
+  referenceId: string;
   captureId: string;
   status: string;
   amountCents: number;
@@ -139,7 +129,7 @@ export async function captureOrder(orderId: string): Promise<CaptureResult> {
     payerEmail: order.payer?.email_address,
     units: order.purchase_units.flatMap((pu) =>
       (pu.payments?.captures ?? []).map((c) => ({
-        referenceId: pu.reference_id as "vendor" | "ngo",
+        referenceId: pu.reference_id,
         captureId: c.id,
         status: c.status,
         amountCents: Math.round(Number(c.amount.value) * 100),

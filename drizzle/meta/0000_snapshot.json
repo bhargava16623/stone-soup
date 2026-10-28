@@ -1,5 +1,5 @@
 {
-  "id": "9f9d0659-75f1-4656-aa77-5e4f06ce900d",
+  "id": "8ed028f9-0d0e-484a-80f1-2a57a79fe99a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -56,6 +56,19 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "benchmark": {
+          "name": "benchmark",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
         }
       },
       "indexes": {
@@ -96,8 +109,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.donations": {
-      "name": "donations",
+    "public.deliveries": {
+      "name": "deliveries",
       "schema": "",
       "columns": {
         "id": {
@@ -109,6 +122,124 @@
         "need_id": {
           "name": "need_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "units": {
+          "name": "units",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo": {
+          "name": "photo",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "photo_mime": {
+          "name": "photo_mime",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verdict": {
+          "name": "verdict",
+          "type": "delivery_verdict",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "ai_summary": {
+          "name": "ai_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ai_check": {
+          "name": "ai_check",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "deliveries_need_id_index": {
+          "name": "deliveries_need_id_index",
+          "columns": [
+            {
+              "expression": "need_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "deliveries_need_id_needs_id_fk": {
+          "name": "deliveries_need_id_needs_id_fk",
+          "tableFrom": "deliveries",
+          "tableTo": "needs",
+          "columnsFrom": [
+            "need_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.donations": {
+      "name": "donations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "need_id": {
+          "name": "need_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reference_id": {
+          "name": "reference_id",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -131,57 +262,18 @@
           "notNull": true,
           "default": 0
         },
-        "ngo_share_cents": {
-          "name": "ngo_share_cents",
-          "type": "integer",
+        "capture_id": {
+          "name": "capture_id",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": 0
+          "notNull": false
         },
-        "cover_fees": {
-          "name": "cover_fees",
+        "captured": {
+          "name": "captured",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "paypal_order_id": {
-          "name": "paypal_order_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "vendor_capture_id": {
-          "name": "vendor_capture_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "ngo_capture_id": {
-          "name": "ngo_capture_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "donor_name": {
-          "name": "donor_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "donor_email": {
-          "name": "donor_email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "donation_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'created'"
         },
         "created_at": {
           "name": "created_at",
@@ -189,12 +281,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "captured_at": {
-          "name": "captured_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -212,9 +298,37 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "donations_order_id_index": {
+          "name": "donations_order_id_index",
+          "columns": [
+            {
+              "expression": "order_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
+        "donations_order_id_orders_id_fk": {
+          "name": "donations_order_id_orders_id_fk",
+          "tableFrom": "donations",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "donations_need_id_needs_id_fk": {
           "name": "donations_need_id_needs_id_fk",
           "tableFrom": "donations",
@@ -230,15 +344,94 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "donations_paypalOrderId_unique": {
-          "name": "donations_paypalOrderId_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "paypal_order_id"
-          ]
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.impact_updates": {
+      "name": "impact_updates",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "donation_id": {
+          "name": "donation_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "delivery_id": {
+          "name": "delivery_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
+      "indexes": {
+        "impact_updates_donation_id_index": {
+          "name": "impact_updates_donation_id_index",
+          "columns": [
+            {
+              "expression": "donation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "impact_updates_donation_id_donations_id_fk": {
+          "name": "impact_updates_donation_id_donations_id_fk",
+          "tableFrom": "impact_updates",
+          "tableTo": "donations",
+          "columnsFrom": [
+            "donation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "impact_updates_delivery_id_deliveries_id_fk": {
+          "name": "impact_updates_delivery_id_deliveries_id_fk",
+          "tableFrom": "impact_updates",
+          "tableTo": "deliveries",
+          "columnsFrom": [
+            "delivery_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -304,6 +497,13 @@
         },
         "funded_units": {
           "name": "funded_units",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "delivered_units": {
+          "name": "delivered_units",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -514,6 +714,126 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.orders": {
+      "name": "orders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "paypal_order_id": {
+          "name": "paypal_order_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "order_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'created'"
+        },
+        "source": {
+          "name": "source",
+          "type": "order_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'direct'"
+        },
+        "cover_fees": {
+          "name": "cover_fees",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "ngo_share_ngo_id": {
+          "name": "ngo_share_ngo_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ngo_share_cents": {
+          "name": "ngo_share_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "ngo_capture_id": {
+          "name": "ngo_capture_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agent_note": {
+          "name": "agent_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "donor_name": {
+          "name": "donor_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "donor_email": {
+          "name": "donor_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "captured_at": {
+          "name": "captured_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "orders_ngo_share_ngo_id_ngos_id_fk": {
+          "name": "orders_ngo_share_ngo_id_ngos_id_fk",
+          "tableFrom": "orders",
+          "tableTo": "ngos",
+          "columnsFrom": [
+            "ngo_share_ngo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "orders_paypalOrderId_unique": {
+          "name": "orders_paypalOrderId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "paypal_order_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.vendors": {
       "name": "vendors",
       "schema": "",
@@ -522,6 +842,12 @@
           "name": "id",
           "type": "serial",
           "primaryKey": true,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
           "notNull": true
         },
         "name": {
@@ -572,20 +898,28 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "vendors_slug_unique": {
+          "name": "vendors_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     }
   },
   "enums": {
-    "public.donation_status": {
-      "name": "donation_status",
+    "public.delivery_verdict": {
+      "name": "delivery_verdict",
       "schema": "public",
       "values": [
-        "created",
-        "captured",
-        "failed"
+        "pending",
+        "verified",
+        "flagged"
       ]
     },
     "public.fair_price": {
@@ -607,6 +941,23 @@
         "funded",
         "delivered",
         "verified"
+      ]
+    },
+    "public.order_source": {
+      "name": "order_source",
+      "schema": "public",
+      "values": [
+        "direct",
+        "agent"
+      ]
+    },
+    "public.order_status": {
+      "name": "order_status",
+      "schema": "public",
+      "values": [
+        "created",
+        "captured",
+        "failed"
       ]
     },
     "public.urgency": {

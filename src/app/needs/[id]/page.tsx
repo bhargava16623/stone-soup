@@ -69,6 +69,7 @@ async function NeedView({ params }: { params: PageProps<"/needs/[id]">["params"]
         {need.status === "open" && remaining > 0 ? (
           <DonatePanel
             needId={need.id}
+            ngoId={need.ngoId}
             unitName={unit}
             unitPriceCents={need.unitPriceCents}
             remaining={remaining}
@@ -140,10 +141,11 @@ function RecentGifts({ need }: { need: NeedWithRelations }) {
         {need.donations.map((d) => (
           <li key={d.id} className="flex justify-between">
             <span>
-              {d.donorName?.split(" ")[0] ?? "Someone"} added {d.units} {need.catalogItem.unit}
+              {d.order.donorName?.split(" ")[0] ?? "Someone"}
+              {d.order.source === "agent" ? " (via Giving Agent)" : ""} added {d.units} {need.catalogItem.unit}
               {d.units === 1 ? "" : "s"}
             </span>
-            <span className="text-muted">{d.capturedAt?.toLocaleDateString("en-US")}</span>
+            <span className="text-muted">{d.order.capturedAt?.toLocaleDateString("en-US")}</span>
           </li>
         ))}
       </ul>

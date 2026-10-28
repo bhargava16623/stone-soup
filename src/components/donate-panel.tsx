@@ -7,6 +7,7 @@ import { feeCoverCents, formatUsd, MIN_NGO_SHARE_CENTS } from "@/lib/fees.ts";
 
 interface Props {
   needId: number;
+  ngoId: number;
   unitName: string;
   unitPriceCents: number;
   remaining: number;
@@ -16,7 +17,7 @@ interface Props {
 
 const NGO_SHARE_OPTIONS = [0, MIN_NGO_SHARE_CENTS, 1000];
 
-export function DonatePanel({ needId, unitName, unitPriceCents, remaining, ngoName, vendorName }: Props) {
+export function DonatePanel({ needId, ngoId, unitName, unitPriceCents, remaining, ngoName, vendorName }: Props) {
   const router = useRouter();
   const [units, setUnits] = useState(1);
   const [coverFees, setCoverFees] = useState(true);
@@ -135,10 +136,14 @@ export function DonatePanel({ needId, unitName, unitPriceCents, remaining, ngoNa
             type="donate"
             createOrder={async () => {
               setError(null);
-              const res = await fetch("/api/donations", {
+              const res = await fetch("/api/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ needId, units, ngoShareCents, coverFees }),
+                body: JSON.stringify({
+                  items: [{ needId, units }],
+                  coverFees,
+                  ngoShare: ngoShareCents > 0 ? { ngoId, cents: ngoShareCents } : null,
+                }),
               });
               const data = await res.json();
               if (!res.ok) {
@@ -148,13 +153,13 @@ export function DonatePanel({ needId, unitName, unitPriceCents, remaining, ngoNa
               return { orderId: data.orderId as string };
             }}
             onApprove={async ({ orderId }) => {
-              const res = await fetch(`/api/donations/${orderId}/capture`, { method: "POST" });
+              const res = await fetch(`/api/checkout/${orderId}/capture`, { method: "POST" });
               const data = await res.json();
               if (!res.ok) {
                 setError(data.error ?? "The payment could not be completed");
                 return;
               }
-              setThanks(data.units);
+              setThanks(data.gifts[0].units);
               setUnits(1);
               router.refresh();
             }}

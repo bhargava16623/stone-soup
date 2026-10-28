@@ -13,7 +13,9 @@ if (!vendorEmail || !ngoEmail) throw new Error("Set SANDBOX_VENDOR_EMAIL and SAN
 
 const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
-await db.execute(sql`truncate donations, needs, catalog_items, vendors, ngos restart identity cascade`);
+await db.execute(
+  sql`truncate impact_updates, deliveries, donations, orders, needs, catalog_items, vendors, ngos restart identity cascade`,
+);
 
 const [hope, riverbend] = await db
   .insert(schema.ngos)
@@ -41,21 +43,38 @@ const [hope, riverbend] = await db
 const [sunrise, harbor] = await db
   .insert(schema.vendors)
   .values([
-    { name: "Sunrise Supplies", city: "Tacoma", country: "US", paypalEmail: vendorEmail, trustScore: 72 },
-    { name: "Harbor Wholesale", city: "Seattle", country: "US", paypalEmail: vendorEmail, trustScore: 64 },
+    { slug: "sunrise-supplies", name: "Sunrise Supplies", city: "Tacoma", country: "US", paypalEmail: vendorEmail, trustScore: 72 },
+    { slug: "harbor-wholesale", name: "Harbor Wholesale", city: "Seattle", country: "US", paypalEmail: vendorEmail, trustScore: 64 },
   ])
   .returning();
 
+const catalog = [
+  { vendorId: sunrise.id, name: "Fleece blanket", spec: "fleece blanket, twin size", unit: "blanket", unitPriceCents: 1800 },
+  { vendorId: sunrise.id, name: "Sleeping bag", spec: "sleeping bag, adult, rectangular, 40°F rated, synthetic fill", unit: "sleeping bag", unitPriceCents: 3800 },
+  { vendorId: sunrise.id, name: "White rice, 25 lb", spec: "white rice, 25 lb bag", unit: "bag", unitPriceCents: 2200 },
+  { vendorId: harbor.id, name: "Fleece blanket", spec: "fleece blanket, twin size", unit: "blanket", unitPriceCents: 2100 },
+  { vendorId: harbor.id, name: "Kids school backpack", spec: "kids school backpack", unit: "backpack", unitPriceCents: 2400 },
+  { vendorId: harbor.id, name: "Toothbrush & toothpaste kit", spec: "toothbrush and toothpaste travel kit", unit: "kit", unitPriceCents: 900 },
+];
+
+// One market search per distinct spec; vendors selling the same item share it.
+const benchmarks = new Map<string, Awaited<ReturnType<typeof createBenchmark>>>();
+for (const spec of new Set(catalog.map((c) => c.spec))) {
+  const started = Date.now();
+  const b = skipBenchmark ? undefined : await createBenchmark(spec);
+  benchmarks.set(spec, b);
+  const market = b ? `market $${(b.medianCents / 100).toFixed(2)} (n=${b.products.length})` : "no benchmark";
+  console.log(`  ${spec}: ${market} (${Date.now() - started} ms)`);
+}
+
 const items = await db
   .insert(schema.catalogItems)
-  .values([
-    { vendorId: sunrise.id, name: "Fleece blanket", spec: "fleece blanket, twin size", unit: "blanket", unitPriceCents: 1800 },
-    { vendorId: sunrise.id, name: "Sleeping bag", spec: "sleeping bag, adult, rectangular, 40°F rated, synthetic fill", unit: "sleeping bag", unitPriceCents: 3800 },
-    { vendorId: sunrise.id, name: "White rice, 25 lb", spec: "white rice, 25 lb bag", unit: "bag", unitPriceCents: 2200 },
-    { vendorId: harbor.id, name: "Fleece blanket", spec: "fleece blanket, twin size", unit: "blanket", unitPriceCents: 2100 },
-    { vendorId: harbor.id, name: "Kids school backpack", spec: "kids school backpack", unit: "backpack", unitPriceCents: 2400 },
-    { vendorId: harbor.id, name: "Toothbrush & toothpaste kit", spec: "toothbrush and toothpaste travel kit", unit: "kit", unitPriceCents: 900 },
-  ])
+  .values(
+    catalog.map((c) => {
+      const b = benchmarks.get(c.spec);
+      return { ...c, benchmark: b, imageUrl: b?.products.find((p) => p.imageUrl)?.imageUrl ?? null };
+    }),
+  )
   .returning();
 const item = (vendorId: number, name: string) => items.find((i) => i.vendorId === vendorId && i.name === name)!;
 
@@ -109,9 +128,7 @@ const needs = [
 ];
 
 for (const n of needs) {
-  const started = Date.now();
-  const benchmark = skipBenchmark ? undefined : await createBenchmark(n.item.spec);
-  const check = checkVendorPrice(n.item.unitPriceCents, benchmark);
+  const check = checkVendorPrice(n.item.unitPriceCents, n.item.benchmark ?? undefined);
   await db.insert(schema.needs).values({
     ngoId: n.ngo.id,
     vendorId: n.item.vendorId,
@@ -122,13 +139,12 @@ for (const n of needs) {
     unitPriceCents: n.item.unitPriceCents,
     urgency: n.urgency,
     deadline: n.deadline,
-    benchmark,
+    benchmark: n.item.benchmark,
     fairPrice: check.verdict,
     priceJustification: "priceJustification" in n ? n.priceJustification : null,
-    imageUrl: benchmark?.products.find((p) => p.imageUrl)?.imageUrl ?? null,
+    imageUrl: n.item.imageUrl,
   });
-  const market = benchmark ? `market $${(benchmark.medianCents / 100).toFixed(2)} (n=${benchmark.products.length})` : "no benchmark";
-  console.log(`✓ ${n.title} — $${(n.item.unitPriceCents / 100).toFixed(2)} vs ${market} → ${check.verdict} (${Date.now() - started} ms)`);
+  console.log(`✓ ${n.title} — $${(n.item.unitPriceCents / 100).toFixed(2)} → ${check.verdict}`);
 }
 
 console.log("Seeded.");
