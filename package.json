@@ -15,7 +15,7 @@
     "db:up": "docker compose up -d",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "node --env-file=.env scripts/seed.ts",
+    "db:seed": "node --env-file-if-exists=.env scripts/seed.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

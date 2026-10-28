@@ -1,0 +1,40 @@
+# Render Blueprint: web service + Postgres. Deploy with "New → Blueprint" on render.com.
+# Secrets marked `sync: false` are entered in the Render dashboard on first deploy.
+services:
+  - type: web
+    name: stone-soup
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    # Apply pending migrations on every start; seed once from the Render shell with `npm run db:seed`.
+    startCommand: npm run db:migrate && npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: stone-soup-db
+          property: connectionString
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: SANDBOX_VENDOR_EMAIL
+        sync: false
+      - key: SANDBOX_NGO_EMAIL
+        sync: false
+      - key: CHANNEL3_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+databases:
+  - name: stone-soup-db
+    # Free Render Postgres expires after 30 days; use a paid plan to keep it through judging.
+    plan: free
+    postgresMajorVersion: "16"

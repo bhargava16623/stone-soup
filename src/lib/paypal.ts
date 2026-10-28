@@ -139,3 +139,29 @@ export async function captureOrder(orderId: string): Promise<CaptureResult> {
     ),
   };
 }
+
+const WEBHOOK_HEADERS = [
+  "paypal-auth-algo",
+  "paypal-cert-url",
+  "paypal-transmission-id",
+  "paypal-transmission-sig",
+  "paypal-transmission-time",
+] as const;
+
+/** Ask PayPal whether a webhook delivery is genuine. Requires PAYPAL_WEBHOOK_ID from the developer dashboard. */
+export async function verifyWebhook(headers: Headers, event: unknown): Promise<boolean> {
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  if (!webhookId) throw new Error("PAYPAL_WEBHOOK_ID is not set");
+  const h = Object.fromEntries(WEBHOOK_HEADERS.map((name) => [name, headers.get(name)]));
+  if (Object.values(h).some((v) => !v)) return false;
+  const result = await api<{ verification_status: string }>("POST", "/v1/notifications/verify-webhook-signature", {
+    auth_algo: h["paypal-auth-algo"],
+    cert_url: h["paypal-cert-url"],
+    transmission_id: h["paypal-transmission-id"],
+    transmission_sig: h["paypal-transmission-sig"],
+    transmission_time: h["paypal-transmission-time"],
+    webhook_id: webhookId,
+    webhook_event: event,
+  });
+  return result.verification_status === "SUCCESS";
+}
