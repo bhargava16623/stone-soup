@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { draftNeedsAction, publishNeedAction } from "@/app/ngo/[slug]/actions.ts";
+import { Camera, Eye, PenLine } from "lucide-react";
+import { draftNeedsAction, draftNeedsFromPhotoAction, publishNeedAction } from "@/app/ngo/[slug]/actions.ts";
 import { FairPriceBadge } from "@/components/need-bits.tsx";
 import { formatUsd } from "@/lib/fees.ts";
+import { resizeImage } from "@/lib/image.ts";
 import type { NeedDraft } from "@/lib/intake.ts";
 
 const EXAMPLES = [
@@ -16,7 +18,11 @@ const EXAMPLES = [
 type DraftState = NeedDraft & { justification: string; published?: number; error?: string };
 
 export function IntakeForm({ ngoSlug }: { ngoSlug: string }) {
+  const [mode, setMode] = useState<"write" | "photo">("write");
   const [text, setText] = useState("");
+  const [photo, setPhoto] = useState<{ base64: string; mimeType: string; preview: string } | null>(null);
+  const [note, setNote] = useState("");
+  const [photoSummary, setPhotoSummary] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<DraftState[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [drafting, startDrafting] = useTransition();
@@ -32,6 +38,32 @@ export function IntakeForm({ ngoSlug }: { ngoSlug: string }) {
       if (!res.ok) return setError(res.error);
       if (res.data.length === 0) return setError("We couldn't find any items in that. Try naming what you need.");
       setDrafts(res.data.map((d) => ({ ...d, justification: "" })));
+    });
+  }
+
+  async function pickPhoto(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    setPhotoSummary(null);
+    setDrafts([]);
+    try {
+      const img = await resizeImage(file);
+      setPhoto({ ...img, preview: `data:${img.mimeType};base64,${img.base64}` });
+    } catch {
+      setError("We couldn't read that image. Try a JPEG or PNG photo.");
+    }
+  }
+
+  function readShelf() {
+    if (!photo) return;
+    setError(null);
+    startDrafting(async () => {
+      const res = await draftNeedsFromPhotoAction({ photoBase64: photo.base64, photoMime: photo.mimeType, note });
+      if (!res.ok) return setError(res.error);
+      setPhotoSummary(res.data.summary);
+      if (!res.data.looksLikeStorage) return setError("This doesn't look like a storeroom or supply shelf. Try a photo of where you keep supplies.");
+      if (res.data.drafts.length === 0) return setError("Nothing looks low on this shelf. Nice work!");
+      setDrafts(res.data.drafts.map((d) => ({ ...d, justification: "" })));
     });
   }
 
@@ -53,36 +85,108 @@ export function IntakeForm({ ngoSlug }: { ngoSlug: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-border bg-surface p-6">
-        <label htmlFor="request" className="font-serif text-xl font-semibold">
-          What do you need?
-        </label>
-        <p className="mt-1 text-sm text-muted">Write it the way you&apos;d say it. We&apos;ll turn it into needs, find vendors and check prices.</p>
-        <textarea
-          id="request"
-          rows={4}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="e.g. We need about 40 blankets before Friday…"
-          className="mt-4 w-full rounded-xl border border-border bg-transparent p-3"
-        />
-        <div className="mt-2 flex flex-wrap gap-2">
-          {EXAMPLES.map((ex) => (
-            <button key={ex} type="button" onClick={() => setText(ex)} className="rounded-full border border-border px-3 py-1 text-left text-xs text-muted transition hover:border-accent hover:bg-accent-soft hover:text-accent">
-              {ex.length > 60 ? `${ex.slice(0, 57)}…` : ex}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={draft}
-          disabled={drafting || text.trim().length < 5}
-          className="mt-4 rounded-full bg-accent px-5 py-2.5 font-medium text-white disabled:opacity-50 transition hover:brightness-110 active:scale-[0.98]"
-        >
-          {drafting ? "Reading your request and checking prices…" : "Draft needs"}
-        </button>
-        {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      <div className="inline-flex rounded-full border border-border bg-surface p-1 text-sm">
+        {(
+          [
+            ["write", PenLine, "Write it"],
+            ["photo", Camera, "Snap the shelf"],
+          ] as const
+        ).map(([value, Icon, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => {
+              setMode(value);
+              setError(null);
+            }}
+            aria-pressed={mode === value}
+            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 font-medium transition ${mode === value ? "bg-accent text-white" : "text-muted hover:text-accent"}`}
+          >
+            <Icon className="h-4 w-4" /> {label}
+          </button>
+        ))}
       </div>
+
+      {mode === "photo" ? (
+        <div className="rounded-2xl border border-border bg-surface p-6">
+          <p className="font-serif text-xl font-semibold">Photograph what&apos;s running low</p>
+          <p className="mt-1 text-sm text-muted">
+            Your pantry, linen closet or supply shelf. We&apos;ll spot what&apos;s missing, work out how much to restock, find
+            suppliers and check their prices.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <label className="relative flex min-h-56 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-border bg-background text-sm text-muted transition hover:border-accent hover:text-accent">
+              {photo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photo.preview} alt="Your shelf" className="absolute inset-0 h-full w-full object-cover" />
+              ) : (
+                <span className="flex flex-col items-center gap-2 p-6 text-center">
+                  <Camera className="h-8 w-8" /> Take or choose a photo
+                </span>
+              )}
+              {drafting && photo && (
+                <span aria-hidden className="pointer-events-none absolute inset-0 bg-accent/10">
+                  <span className="animate-scan absolute inset-x-0 h-1 bg-accent shadow-[0_0_24px_6px_var(--accent)]" />
+                </span>
+              )}
+              <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => pickPhoto(e.target.files?.[0])} />
+            </label>
+            <div className="flex flex-col gap-3">
+              <label className="text-sm">
+                <span className="font-medium">Anything we should know?</span> <span className="text-muted">(optional)</span>
+                <textarea
+                  rows={3}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="e.g. We feed 30 people a day; this needs to last two weeks."
+                  className="mt-1 w-full rounded-xl border border-border bg-transparent p-3"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={readShelf}
+                disabled={drafting || !photo}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-5 py-2.5 font-medium text-white transition hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
+              >
+                <Eye className="h-4 w-4" /> {drafting ? "Looking at your shelf…" : "Read the shelf"}
+              </button>
+              {photoSummary && <p className="rounded-xl bg-background p-3 text-sm text-muted">We see: {photoSummary}</p>}
+              {error && <p className="text-sm text-accent">{error}</p>}
+            </div>
+          </div>
+        </div>
+      ) : (
+      <div className="rounded-2xl border border-border bg-surface p-6">
+          <label htmlFor="request" className="font-serif text-xl font-semibold">
+            What do you need?
+          </label>
+          <p className="mt-1 text-sm text-muted">Write it the way you&apos;d say it. We&apos;ll turn it into needs, find vendors and check prices.</p>
+          <textarea
+            id="request"
+            rows={4}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="e.g. We need about 40 blankets before Friday…"
+            className="mt-4 w-full rounded-xl border border-border bg-transparent p-3"
+          />
+          <div className="mt-2 flex flex-wrap gap-2">
+            {EXAMPLES.map((ex) => (
+              <button key={ex} type="button" onClick={() => setText(ex)} className="rounded-full border border-border px-3 py-1 text-left text-xs text-muted transition hover:border-accent hover:bg-accent-soft hover:text-accent">
+                {ex.length > 60 ? `${ex.slice(0, 57)}…` : ex}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={draft}
+            disabled={drafting || text.trim().length < 5}
+            className="mt-4 rounded-full bg-accent px-5 py-2.5 font-medium text-white disabled:opacity-50 transition hover:brightness-110 active:scale-[0.98]"
+          >
+            {drafting ? "Reading your request and checking prices…" : "Draft needs"}
+          </button>
+          {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+        </div>
+      )}
 
       {drafts.map((d) => {
         const option = d.options.find((o) => o.catalogItemId === d.selectedCatalogItemId);
@@ -123,6 +227,11 @@ export function IntakeForm({ ngoSlug }: { ngoSlug: string }) {
                   className="w-20 rounded-lg border border-border bg-transparent p-1.5"
                 />
               </label>
+              {d.seen && (
+                <p className="flex basis-full items-center gap-1.5 text-xs text-muted">
+                  <Eye className="h-3.5 w-3.5 text-accent" /> Seen in your photo: {d.seen}
+                </p>
+              )}
               {d.quantityNote && <p className="basis-full text-xs text-muted">How we worked this out: {d.quantityNote}</p>}
               <label className="flex items-center gap-2">
                 Urgency
