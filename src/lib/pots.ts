@@ -34,6 +34,7 @@ export async function getPot(slug: string) {
   if (!pot) return undefined;
   const contributions = await db
     .select({
+      id: schema.donations.id,
       units: schema.donations.units,
       donorName: schema.orders.donorName,
       note: schema.orders.potNote,
@@ -45,6 +46,37 @@ export async function getPot(slug: string) {
     .orderBy(desc(schema.orders.capturedAt));
   const raisedUnits = contributions.reduce((s, c) => s + c.units, 0);
   return { ...pot, contributions, raisedUnits };
+}
+
+export interface LiveSnapshot {
+  raisedUnits: number;
+  goalUnits: number;
+  needOpen: boolean;
+  contributions: { id: number; name: string; units: number; note: string | null }[];
+  delivery: { id: number; summary: string | null } | null;
+}
+
+/** What the live wall shows, polled every few seconds. Donors appear by first name only. */
+export async function getLiveSnapshot(slug: string): Promise<LiveSnapshot | undefined> {
+  const pot = await getPot(slug);
+  if (!pot) return undefined;
+  const delivery = await db.query.deliveries.findFirst({
+    where: (d, { and, eq }) => and(eq(d.needId, pot.needId), eq(d.verdict, "verified")),
+    columns: { id: true, aiSummary: true },
+    orderBy: (d) => [desc(d.createdAt)],
+  });
+  return {
+    raisedUnits: pot.raisedUnits,
+    goalUnits: pot.goalUnits,
+    needOpen: pot.need.status === "open" && pot.need.fundedUnits < pot.need.quantity,
+    contributions: pot.contributions.slice(0, 12).map((c) => ({
+      id: c.id,
+      name: c.donorName?.split(" ")[0] ?? "Someone",
+      units: c.units,
+      note: c.note,
+    })),
+    delivery: delivery ? { id: delivery.id, summary: delivery.aiSummary } : null,
+  };
 }
 
 export type PotWithProgress = NonNullable<Awaited<ReturnType<typeof getPot>>>;

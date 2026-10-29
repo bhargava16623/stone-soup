@@ -68,6 +68,7 @@
   --color-amber: var(--amber);
   --color-amber-soft: var(--amber-soft);
   --color-plate: var(--plate);
+  --color-stone: var(--stone);
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-fraunces);
 }
@@ -114,9 +115,38 @@ body {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
 }
+@keyframes scan {
+  0%, 100% { top: 0; }
+  50% { top: calc(100% - 4px); }
+}
+/* A stone dropped into the pot on the live wall. */
+@keyframes drop {
+  0% { transform: translateY(-60vh) rotate(0deg); opacity: 0; }
+  15% { opacity: 1; }
+  80% { transform: translateY(0) rotate(200deg); opacity: 1; }
+  100% { transform: translateY(12px) rotate(220deg); opacity: 0; }
+}
+@keyframes pop-in {
+  0% { transform: translateY(16px) scale(0.92); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes stamp {
+  0% { transform: rotate(-12deg) scale(2.4); opacity: 0; }
+  60% { transform: rotate(-12deg) scale(0.92); opacity: 1; }
+  100% { transform: rotate(-12deg) scale(1); opacity: 1; }
+}
+/* A stone travelling along a gift's journey. */
+@keyframes travel {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+.animate-pop-in { animation: pop-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.animate-stamp { animation: stamp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 @media (prefers-reduced-motion: no-preference) {
   .animate-steam { animation: steam 3.2s ease-in-out infinite; }
   .animate-bob { animation: bob 5s ease-in-out infinite; }
+  .animate-scan { animation: scan 2.4s ease-in-out infinite; }
+  .animate-drop { animation: drop 1.4s cubic-bezier(0.5, 0, 0.75, 0) both; }
 }
 
 /* Printing a report: plain page, no site chrome or buttons. */

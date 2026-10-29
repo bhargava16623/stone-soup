@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import QRCode from "qrcode";
-import { Users } from "lucide-react";
+import { MonitorPlay, Users } from "lucide-react";
 import { DonatePanel } from "@/components/donate-panel.tsx";
 import { FairPriceBadge } from "@/components/need-bits.tsx";
 import { PageHeader } from "@/components/page-header.tsx";
@@ -74,8 +74,8 @@ async function PotView({ params }: { params: PageProps<"/pot/[slug]">["params"] 
               <p className="mt-2 text-sm text-muted">Nobody yet — be the first stone in the soup.</p>
             ) : (
               <ul className="mt-4 space-y-3">
-                {pot.contributions.map((c, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm">
+                {pot.contributions.map((c) => (
+                  <li key={c.id} className="flex items-start gap-3 text-sm">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft font-semibold text-accent">
                       {(c.donorName ?? "?")[0]}
                     </span>
@@ -109,6 +109,12 @@ async function PotView({ params }: { params: PageProps<"/pot/[slug]">["params"] 
           <div className="rounded-2xl border border-border bg-surface p-5 text-center">
             <div className="mx-auto w-40 rounded-xl bg-white p-2" dangerouslySetInnerHTML={{ __html: qr }} />
             <p className="mt-2 text-xs text-muted">Scan to join this pot — print it for the office or classroom.</p>
+            <Link
+              href={`/pot/${pot.slug}/live`}
+              className="mt-4 inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-accent hover:text-accent"
+            >
+              <MonitorPlay className="h-4 w-4" /> Put it on the big screen
+            </Link>
           </div>
         </aside>
       </div>
