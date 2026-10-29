@@ -68,12 +68,25 @@ export interface PurchaseUnit {
   payeeEmail: string; // who receives this part of the payment
 }
 
-/** Create one order that pays each purchase unit to its own payee. Returns the PayPal order ID. */
-export async function createOrder(units: PurchaseUnit[], requestId: string): Promise<string> {
+export interface CreatedOrder {
+  id: string;
+  /** Where the payer approves the order, for checkouts that don't use the PayPal button. */
+  approveUrl?: string;
+}
+
+/**
+ * Create one order that pays each purchase unit to its own payee. Pass `redirect` when the payer
+ * approves on PayPal's site from a link (not the JS button); PayPal then sends them back to `returnUrl`.
+ */
+export async function createOrder(
+  units: PurchaseUnit[],
+  requestId: string,
+  redirect?: { returnUrl: string; cancelUrl: string },
+): Promise<CreatedOrder> {
   if (units.length === 0 || units.length > MAX_PURCHASE_UNITS) {
     throw new Error(`An order needs 1–${MAX_PURCHASE_UNITS} purchase units`);
   }
-  const order = await api<{ id: string }>(
+  const order = await api<{ id: string; links?: { rel: string; href: string }[] }>(
     "POST",
     "/v2/checkout/orders",
     {
@@ -85,12 +98,24 @@ export async function createOrder(units: PurchaseUnit[], requestId: string): Pro
         payee: { email_address: u.payeeEmail },
       })),
       payment_source: {
-        paypal: { experience_context: { shipping_preference: "NO_SHIPPING", user_action: "PAY_NOW" } },
+        paypal: {
+          experience_context: {
+            shipping_preference: "NO_SHIPPING",
+            user_action: "PAY_NOW",
+            ...(redirect ? { return_url: redirect.returnUrl, cancel_url: redirect.cancelUrl, brand_name: "Stone Soup" } : {}),
+          },
+        },
       },
     },
     requestId,
   );
-  return order.id;
+  return { id: order.id, approveUrl: order.links?.find((l) => l.rel === "payer-action" || l.rel === "approve")?.href };
+}
+
+/** Current status of an order: CREATED, PAYER_ACTION_REQUIRED, APPROVED, COMPLETED… */
+export async function getOrderStatus(orderId: string): Promise<string> {
+  const order = await api<{ status: string }>("GET", `/v2/checkout/orders/${encodeURIComponent(orderId)}`);
+  return order.status;
 }
 
 export interface CapturedUnit {

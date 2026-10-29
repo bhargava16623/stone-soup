@@ -87,9 +87,20 @@ export interface StartCheckoutInput {
   agentNote?: string;
   clubBasketId?: number;
   pot?: { id: number; note?: string };
+  /** For approval by link (e.g. a gift set up by an AI assistant) rather than the PayPal button. */
+  redirect?: { returnUrl: string; cancelUrl: string };
 }
 
-export async function startCheckout({ items, coverFees = false, ngoShare, source = "direct", agentNote, clubBasketId, pot }: StartCheckoutInput) {
+export async function startCheckout({
+  items,
+  coverFees = false,
+  ngoShare,
+  source = "direct",
+  agentNote,
+  clubBasketId,
+  pot,
+  redirect,
+}: StartCheckoutInput) {
   const basket = await priceBasket(items, coverFees);
   if (pot) {
     const row = await db.query.pots.findFirst({ where: (p, { eq }) => eq(p.id, pot.id) });
@@ -122,7 +133,7 @@ export async function startCheckout({ items, coverFees = false, ngoShare, source
     shareCents = ngoShare.cents;
   }
 
-  const paypalOrderId = await createOrder(units, randomUUID());
+  const { id: paypalOrderId, approveUrl } = await createOrder(units, randomUUID(), redirect);
 
   await db.transaction(async (tx) => {
     const [order] = await tx
@@ -151,7 +162,7 @@ export async function startCheckout({ items, coverFees = false, ngoShare, source
     );
   });
 
-  return { orderId: paypalOrderId, basket, ngoShareCents: shareCents };
+  return { orderId: paypalOrderId, approveUrl, basket, ngoShareCents: shareCents };
 }
 
 /** Capture an approved order and record every gift in it. Safe to call twice. */

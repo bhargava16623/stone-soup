@@ -64,7 +64,8 @@ flowchart LR
 | **JS SDK v6** (`@paypal/react-paypal-js/sdk-v6`) | Donate button on need pages and the Giving Agent basket |
 | **`PayPal-Request-Id` idempotency** | Safe retries of order creation and capture |
 | **Webhooks** with signature verification | `CHECKOUT.ORDER.APPROVED` completes captures if the donor closes the page ([`src/app/api/paypal/webhook`](src/app/api/paypal/webhook/route.ts)) |
-| **Capture IDs** | Shown per gift in the open ledger |
+| **Capture IDs** | Shown per gift in the open ledger, and the key of each gift's public journey |
+| **Approval links** (`payer-action`, `return_url`) | Gifts created by an AI assistant over MCP are approved on PayPal's site and captured on return ([`src/app/api/checkout/return`](src/app/api/checkout/return/route.ts)) |
 
 Fee cover is calculated so the supplier receives the exact price after PayPal's fee (e.g. 2 blankets:
 donor pays $37.81, supplier nets $36.00).
@@ -83,6 +84,34 @@ timeouts, and a cooldown for overloaded models.
 | Giving Agent | Function calling loop (`search_needs`, `propose_basket`) with server-side validation | [`src/lib/agent.ts`](src/lib/agent.ts) |
 | Delivery check | Vision + structured output, plus photo hashing | [`src/lib/delivery.ts`](src/lib/delivery.ts) |
 | Donor impact updates | Grounded generation from delivery facts | [`src/lib/delivery.ts`](src/lib/delivery.ts) |
+| Snap the shelf | Vision + structured output; quantities computed in code | [`src/lib/intake.ts`](src/lib/intake.ts) |
+| Scam Check | Google Search grounding, then structured assessment | [`src/lib/scam-check.ts`](src/lib/scam-check.ts) |
+| Soup Club baskets | The Giving Agent, run monthly per member | [`src/lib/club.ts`](src/lib/club.ts) |
+| Funder report summary | Generation from verified facts only | [`src/lib/report.ts`](src/lib/report.ts) |
+## More ways to give and to trust
+
+- **Give from any AI** ([`/connect`](src/app/connect/page.tsx), [`src/lib/mcp.ts`](src/lib/mcp.ts)) — an MCP
+  server at `/api/mcp`, so Gemini CLI, Claude, ChatGPT or any MCP client can find needs, ask the Giving
+  Agent for a basket and create a gift. The assistant never moves money: `create_gift` returns a PayPal
+  approval link, and PayPal pays each supplier directly once the person approves.
+- **Snap the shelf** — a charity photographs a half-empty pantry or linen closet; Gemini vision says what's
+  low and how much to restock (the division into catalog units is done in code), and drafts matched,
+  price-checked needs.
+- **Live pot wall** ([`/pot/[slug]/live`](src/app/pot/[slug]/live/page.tsx)) — a big-screen group pot for
+  events and classrooms: people scan the QR code and pay on their phones, the pot fills live with names and
+  notes, and the delivery photo is revealed when it's verified.
+- **Follow the dollar** ([`/journey/[captureId]`](src/app/journey/[captureId]/page.tsx)) — every step one
+  gift took, from price check to PayPal capture to verified delivery and thank-you, with the PayPal IDs
+  that prove it. Linked from every row of the ledger.
+- **Scam Check** ([`/check`](src/app/check/page.tsx)) — paste any appeal (link, text or screenshot);
+  Gemini with Google Search grounding lists red flags with evidence and how to verify, and suggests
+  verified needs for the same cause.
+- **Soup Club** ([`/club`](src/app/club/page.tsx)) — a monthly budget; the Giving Agent prepares a basket
+  each month and the member approves it with one PayPal tap.
+- **Group pots** — share a link or QR code and pool gifts toward one need; nearly complete needs are
+  suggested as "finish the pot".
+- **Funder reports** ([`/ngo/[slug]/report`](src/app/ngo/[slug]/report/page.tsx)) — a printable report
+  from verified data only: items delivered, savings against market prices, suppliers paid.
 
 Guardrails: the model never sets amounts (prices come from the database); charity-written text is
 passed to the agent as data, not instructions; flagged deliveries always go to a person.
@@ -140,7 +169,13 @@ src/app/               pages and API routes (Next.js App Router)
   vendor/[slug]/       supplier dashboard: catalog and orders to deliver
   ledger/              open ledger (AG Grid)
   gifts/[orderId]/     donor's gift tracking
+  journey/[captureId]/ follow one gift step by step
+  pot/[slug]/          group pot, and /live for the big screen
+  club/                Soup Club monthly giving
+  check/               Scam Check
+  connect/             give from any AI (MCP setup)
   review/              review queue for flagged deliveries
+  api/mcp/             MCP server
   api/checkout/        create and capture PayPal orders
   api/paypal/webhook/  verified PayPal webhooks
 src/lib/               PayPal, Gemini, Channel3, checkout, intake, agent and delivery logic

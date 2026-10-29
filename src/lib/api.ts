@@ -10,3 +10,11 @@ export function errorResponse(e: unknown, paypalMessage: string) {
   }
   throw e;
 }
+
+/** The site's public origin, for links sent outside the app (PayPal return URLs, MCP replies). */
+export function publicOrigin(request: Request): string {
+  if (process.env.PUBLIC_BASE_URL) return process.env.PUBLIC_BASE_URL.replace(/\/$/, "");
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const proto = request.headers.get("x-forwarded-proto") ?? new URL(request.url).protocol.replace(":", "");
+  return host ? `${proto}://${host}` : new URL(request.url).origin;
+}
