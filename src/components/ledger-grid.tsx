@@ -76,7 +76,13 @@ export function LedgerGrid({ rows }: { rows: LedgerRow[] }) {
         headerName: "PayPal capture",
         width: 190,
         cellClass: "font-mono text-xs",
-        tooltipValueGetter: () => "PayPal capture ID for the payment to the supplier",
+        tooltipValueGetter: () => "PayPal capture ID for the payment to the supplier. Click to follow this gift.",
+        cellRenderer: (p: { value?: string | null; node: { rowPinned?: string | null } }) =>
+          p.value && !p.node.rowPinned ? (
+            <a href={`/journey/${p.value}`} className="text-accent hover:underline">
+              {p.value}
+            </a>
+          ) : null,
       },
     ],
     [],

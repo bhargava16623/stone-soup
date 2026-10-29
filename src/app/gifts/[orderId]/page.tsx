@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { Route } from "lucide-react";
 import { FinishIt } from "@/components/finish-it.tsx";
 import { ProductImage } from "@/components/product-image.tsx";
 import { formatUsd } from "@/lib/fees.ts";
@@ -60,6 +61,14 @@ async function Gifts({ params }: { params: PageProps<"/gifts/[orderId]">["params
                 <p className="mt-3 text-sm text-muted">
                   {need.vendor.name} has been paid. You&apos;ll see a photo here once {need.ngo.name} confirms the delivery.
                 </p>
+              )}
+              {d.captureId && (
+                <Link
+                  href={`/journey/${d.captureId}`}
+                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent underline-offset-4 hover:underline"
+                >
+                  <Route className="h-4 w-4" /> Follow this gift, step by step
+                </Link>
               )}
             </li>
           );

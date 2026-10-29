@@ -273,6 +273,7 @@ export const needsRelations = relations(needs, ({ one, many }) => ({
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   donations: many(donations),
   ngoShareNgo: one(ngos, { fields: [orders.ngoShareNgoId], references: [ngos.id] }),
+  pot: one(pots, { fields: [orders.potId], references: [pots.id] }),
 }));
 export const donationsRelations = relations(donations, ({ one, many }) => ({
   order: one(orders, { fields: [donations.orderId], references: [orders.id] }),
