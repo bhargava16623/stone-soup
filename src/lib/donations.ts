@@ -7,6 +7,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { db, schema } from "@/db/index.ts";
 import { feeCoverCents, MIN_NGO_SHARE_CENTS } from "./fees.ts";
 import { captureOrder, createOrder, MAX_PURCHASE_UNITS, type PurchaseUnit } from "./paypal.ts";
+import { canPostNeeds } from "./verify.ts";
 
 export class DonationError extends Error {}
 
@@ -53,7 +54,7 @@ export async function priceBasket(items: BasketItem[], coverFees: boolean): Prom
 
   const lines = items.map((item): BasketLine => {
     const need = rows.find((r) => r.id === item.needId);
-    if (!need || need.status !== "open") throw new DonationError(`Need ${item.needId} is not open for donations`);
+    if (!need || need.status !== "open" || !canPostNeeds(need.ngo.status)) throw new DonationError(`Need ${item.needId} is not open for donations`);
     const remaining = need.quantity - need.fundedUnits;
     if (item.units > remaining) throw new DonationError(`Only ${remaining} left to fund for "${need.title}"`);
     const goodsCents = item.units * need.unitPriceCents;

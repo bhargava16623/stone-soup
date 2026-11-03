@@ -6,6 +6,7 @@ import { db, schema } from "@/db/index.ts";
 import type { Need } from "@/db/schema.ts";
 import { checkVendorPrice } from "./benchmark.ts";
 import { generateJson } from "./gemini.ts";
+import { canPostNeeds } from "./verify.ts";
 
 export interface VendorOption {
   catalogItemId: number;
@@ -263,6 +264,8 @@ export interface PublishInput {
 }
 
 export async function publishNeed(input: PublishInput) {
+  const ngo = await db.query.ngos.findFirst({ where: (n, { eq }) => eq(n.id, input.ngoId) });
+  if (!ngo || !canPostNeeds(ngo.status)) throw new Error("Verify your charity before posting needs");
   const item = await db.query.catalogItems.findFirst({ where: (c, { eq }) => eq(c.id, input.catalogItemId) });
   if (!item || !item.active) throw new Error("That vendor item is no longer available");
   if (!Number.isInteger(input.quantity) || input.quantity < 1) throw new Error("Quantity must be at least 1");

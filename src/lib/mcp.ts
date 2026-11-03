@@ -64,6 +64,10 @@ export function createStoneSoupServer(origin: string): McpServer {
         need_id: n.id,
         title: n.title,
         charity: `${n.ngo.name}, ${n.ngo.city}`,
+        charity_check:
+          n.ngo.status === "verified"
+            ? `IRS-registered 501(c)(3), EIN ${n.ngo.ein}, proved it runs ${n.ngo.website}`
+            : "fictional demo charity",
         item: n.catalogItem.name,
         unit_price: formatUsd(n.unitPriceCents),
         units_still_needed: n.quantity - n.fundedUnits,

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { DonatePanel } from "@/components/donate-panel.tsx";
 import { StartPotForm } from "@/components/start-pot-form.tsx";
 import { getPotsForNeed } from "@/lib/pots.ts";
-import { FairPriceBadge, formatDeadline, FundingProgress, UrgencyChip } from "@/components/need-bits.tsx";
+import { CharityBadge, FairPriceBadge, formatDeadline, FundingProgress, UrgencyChip } from "@/components/need-bits.tsx";
 import { ProductImage } from "@/components/product-image.tsx";
 import { formatUsd } from "@/lib/fees.ts";
 import { getNeed, type NeedWithRelations } from "@/lib/queries.ts";
@@ -37,8 +37,8 @@ async function NeedView({ params, searchParams }: Pick<PageProps<"/needs/[id]">,
             <FairPriceBadge verdict={need.fairPrice} />
             {need.deadline && <span className="text-sm text-muted">Needed by {formatDeadline(need.deadline)}</span>}
           </div>
-          <p className="text-muted">
-            {need.ngo.name} · {need.ngo.city}
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-muted">
+            {need.ngo.name} · {need.ngo.city} <CharityBadge ngo={need.ngo} detailed />
           </p>
           <h1 className="font-serif text-3xl font-semibold leading-tight sm:text-4xl">{need.title}</h1>
           {need.story && <p className="text-lg">{need.story}</p>}

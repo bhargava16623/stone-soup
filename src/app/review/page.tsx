@@ -4,15 +4,20 @@ import { ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/page-header.tsx";
 import { ProductImage } from "@/components/product-image.tsx";
 import { getFlaggedDeliveries } from "@/lib/delivery.ts";
-import { approveDeliveryAction } from "./actions.ts";
+import { formatEin, getCharitiesToReview } from "@/lib/verify.ts";
+import { approveCharityAction, approveDeliveryAction } from "./actions.ts";
 
 export default function ReviewPage() {
   return (
     <div className="max-w-3xl space-y-6">
-      <PageHeader icon={ShieldCheck} eyebrow="Review queue" title="Deliveries a person should look at">
-        The photo check wasn&apos;t sure about these. Nothing is rejected automatically; a person decides. (Demo: open to
+      <PageHeader icon={ShieldCheck} eyebrow="Review queue" title="What a person should look at">
+        Charities whose official website couldn&apos;t be confirmed automatically, and deliveries the photo check wasn&apos;t sure about. Nothing is rejected automatically; a person decides. (Demo: open to
         everyone.)
       </PageHeader>
+      <Suspense fallback={null}>
+        <Charities />
+      </Suspense>
+      <h2 className="font-serif text-xl font-semibold">Deliveries</h2>
       <Suspense fallback={<p className="text-muted">Loading…</p>}>
         <Queue />
       </Suspense>
@@ -52,5 +57,42 @@ async function Queue() {
         </li>
       ))}
     </ul>
+  );
+}
+
+async function Charities() {
+  const charities = await getCharitiesToReview();
+  if (charities.length === 0) return null;
+  return (
+    <section className="space-y-3">
+      <h2 className="font-serif text-xl font-semibold">Charities</h2>
+      <ul className="space-y-4">
+        {charities.map((n) => (
+          <li key={n.id} className="space-y-2 rounded-2xl border border-border bg-surface p-5 text-sm">
+            <p className="font-medium">
+              {n.name} — {n.website}
+            </p>
+            <p className="text-muted">
+              IRS: {n.irsName}, {n.irsLocation}, EIN {n.ein && formatEin(n.ein)}. Code found at {n.verification?.checkedUrl}.
+            </p>
+            {n.verification && (
+              <p className="text-amber">
+                Web check ({n.verification.official}): {n.verification.evidence}
+              </p>
+            )}
+            <form
+              action={async () => {
+                "use server";
+                await approveCharityAction(n.id);
+              }}
+            >
+              <button className="rounded-full bg-leaf px-4 py-1.5 font-medium text-white transition hover:opacity-90">
+                It&apos;s their official website: verify
+              </button>
+            </form>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

@@ -27,6 +27,7 @@ const [hope, riverbend] = await db
       country: "US",
       description: "A 30-bed emergency shelter run by two staff and a rota of volunteers.",
       paypalEmail: ngoEmail,
+      status: "demo", // fictional charities, labelled as demo rather than verified
     },
     {
       slug: "riverbend-school",
@@ -35,6 +36,7 @@ const [hope, riverbend] = await db
       country: "US",
       description: "A volunteer-run after-school programme for 60 children of farmworker families.",
       paypalEmail: ngoEmail,
+      status: "demo", // fictional charities, labelled as demo rather than verified
     },
   ])
   .returning();

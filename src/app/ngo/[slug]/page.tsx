@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText, ShieldAlert } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { DeliveryForm } from "@/components/delivery-form.tsx";
 import { IntakeForm } from "@/components/intake-form.tsx";
-import { FairPriceBadge } from "@/components/need-bits.tsx";
+import { CharityBadge, FairPriceBadge } from "@/components/need-bits.tsx";
 import { getNgoDashboard } from "@/lib/queries.ts";
+import { canPostNeeds } from "@/lib/verify.ts";
 
 export default function NgoDashboardPage({ params }: PageProps<"/ngo/[slug]">) {
   return (
@@ -26,9 +27,30 @@ async function Dashboard({ params }: { params: PageProps<"/ngo/[slug]">["params"
     <div className="grid gap-10 lg:grid-cols-[1fr_420px]">
       <section className="space-y-4">
         <p className="text-sm text-muted">Acting as (demo)</p>
-        <h1 className="font-serif text-3xl font-semibold">{ngo.name}</h1>
+        <h1 className="flex flex-wrap items-center gap-3 font-serif text-3xl font-semibold">
+          {ngo.name} <CharityBadge ngo={ngo} />
+        </h1>
         <p className="text-muted">{ngo.description}</p>
-        <IntakeForm ngoSlug={ngo.slug} />
+        {canPostNeeds(ngo.status) ? (
+          <IntakeForm ngoSlug={ngo.slug} />
+        ) : (
+          <Link
+            href={`/ngo/${ngo.slug}/verify`}
+            className="flex items-start gap-3 rounded-2xl border border-amber/40 bg-amber-soft p-5 text-amber transition hover:border-amber"
+          >
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
+            <span>
+              <span className="block font-semibold">
+                {ngo.status === "review" ? "A person is confirming your charity" : "Verify your charity to start posting needs"}
+              </span>
+              <span className="text-sm">
+                {ngo.status === "review"
+                  ? "Your website check passed. We'll let you post as soon as it's confirmed."
+                  : "Prove you run this charity's website. Until then nothing can be posted in its name."}
+              </span>
+            </span>
+          </Link>
+        )}
       </section>
 
       <section>

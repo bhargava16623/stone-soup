@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { formatUsd } from "@/lib/fees.ts";
 import type { getOpenNeeds } from "@/lib/queries.ts";
-import { FairPriceBadge, formatDeadline, UrgencyChip } from "./need-bits.tsx";
+import { CharityBadge, FairPriceBadge, formatDeadline, UrgencyChip } from "./need-bits.tsx";
 import { ProductImage } from "./product-image.tsx";
 
 type OpenNeed = Awaited<ReturnType<typeof getOpenNeeds>>[number];
@@ -27,8 +27,8 @@ export function NeedCard({ need }: { need: OpenNeed }) {
 
       <div className="flex flex-1 flex-col gap-4 p-5">
         <div>
-          <p className="text-sm text-muted">
-            {need.ngo.name} · {need.ngo.city}
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+            {need.ngo.name} · {need.ngo.city} <CharityBadge ngo={need.ngo} />
           </p>
           <h3 className="mt-1 font-serif text-xl font-semibold leading-snug transition-colors group-hover:text-accent">{need.title}</h3>
         </div>

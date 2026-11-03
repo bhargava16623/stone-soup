@@ -103,6 +103,13 @@ timeouts, and a cooldown for overloaded models.
 - **Follow the dollar** ([`/journey/[captureId]`](src/app/journey/[captureId]/page.tsx)) — every step one
   gift took, from price check to PayPal capture to verified delivery and thank-you, with the PayPal IDs
   that prove it. Linked from every row of the ledger.
+- **Verified charities only** ([`/ngo/join`](src/app/ngo/join/page.tsx), [`src/lib/verify.ts`](src/lib/verify.ts)) —
+  Stone Soup never makes a page for a charity on its own, and no one can post needs in a charity's name
+  without proving they run it. The EIN must be a 501(c)(3) in IRS data (ProPublica Nonprofit Explorer); the
+  charity publishes a code on its own website; Gemini with Google Search checks that the website is the
+  charity's official one. If it can't confirm that, a person reviews the claim. A second claim on the same EIN
+  is refused. (Answers the 2026 multistate complaint about donation pages created for charities without
+  consent.)
 - **Scam Check** ([`/check`](src/app/check/page.tsx)) — paste any appeal (link, text or screenshot);
   Gemini with Google Search grounding lists red flags with evidence and how to verify, and suggests
   verified needs for the same cause.
@@ -165,6 +172,7 @@ add `https://<your-app>.onrender.com/api/paypal/webhook` as a webhook in the Pay
 src/app/               pages and API routes (Next.js App Router)
   give/                Giving Agent
   needs/[id]/          need page with market check and donate panel
+  ngo/join/            register a charity (IRS lookup), then ngo/[slug]/verify
   ngo/[slug]/          charity dashboard: intake and delivery confirmation
   vendor/[slug]/       supplier dashboard: catalog and orders to deliver
   ledger/              open ledger (AG Grid)
@@ -187,7 +195,8 @@ scripts/               seed script and spikes
 
 - **Sandbox only.** Suppliers are sandbox business accounts; the market check uses real retail prices
   from Channel3, but purchases go to the demo suppliers.
-- **No logins.** Charity and supplier dashboards are open for the demo ("acting as").
+- **No logins.** Charity and supplier dashboards are open for the demo ("acting as"). The two seeded
+  charities are fictional and labelled "Demo charity"; real charities register and verify at `/ngo/join`.
 - **Tax receipts.** In production, a fiscal sponsor or donor-advised fund would be the legal recipient
   so gifts are deductible; the demo doesn't claim deductibility.
 - **Market data.** Channel3 covers retail goods well and groceries poorly; items without reliable data

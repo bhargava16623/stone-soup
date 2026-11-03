@@ -1,4 +1,5 @@
-import type { Need } from "@/db/schema.ts";
+import { BadgeCheck, FlaskConical } from "lucide-react";
+import type { Need, Ngo } from "@/db/schema.ts";
 
 const fairPriceLabel: Record<Need["fairPrice"], { text: string; className: string }> = {
   fair: { text: "Fair price", className: "bg-leaf-soft text-leaf" },
@@ -37,4 +38,26 @@ export function FundingProgress({ funded, total, unit }: { funded: number; total
 export function formatDeadline(date: string | null) {
   if (!date) return null;
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+/** Whether the charity proved who it is (see src/lib/verify.ts). Demo charities are labelled as such. */
+export function CharityBadge({ ngo, detailed = false }: { ngo: Pick<Ngo, "status" | "ein" | "website">; detailed?: boolean }) {
+  if (ngo.status === "demo") {
+    return (
+      <span title="A fictional charity for this demo" className="inline-flex items-center gap-1 rounded-full bg-border px-2.5 py-0.5 text-xs font-medium text-muted">
+        <FlaskConical className="h-3.5 w-3.5" /> Demo charity
+      </span>
+    );
+  }
+  if (ngo.status !== "verified") return null;
+  const domain = ngo.website ? new URL(ngo.website).hostname.replace(/^www\./, "") : null;
+  const facts = [ngo.ein && `EIN ${ngo.ein.slice(0, 2)}-${ngo.ein.slice(2)}`, domain && `owns ${domain}`].filter(Boolean).join(" · ");
+  return (
+    <span
+      title={`IRS-registered 501(c)(3)${facts ? ` · ${facts}` : ""}`}
+      className="inline-flex items-center gap-1 rounded-full bg-leaf-soft px-2.5 py-0.5 text-xs font-medium text-leaf"
+    >
+      <BadgeCheck className="h-3.5 w-3.5" /> Verified charity{detailed && facts ? ` · ${facts}` : ""}
+    </span>
+  );
 }

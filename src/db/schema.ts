@@ -24,6 +24,8 @@ export const fairPrice = pgEnum("fair_price", ["fair", "below_market", "above_ma
 export const orderStatus = pgEnum("order_status", ["created", "captured", "failed"]);
 export const orderSource = pgEnum("order_source", ["direct", "agent"]);
 export const deliveryVerdict = pgEnum("delivery_verdict", ["pending", "verified", "flagged"]);
+// demo: a fictional seeded charity; review: proved its website but a person must confirm it's the official one.
+export const ngoStatus = pgEnum("ngo_status", ["unverified", "review", "verified", "demo"]);
 export const clubBasketStatus = pgEnum("club_basket_status", ["ready", "paid", "skipped"]);
 
 export const ngos = pgTable("ngos", {
@@ -35,8 +37,25 @@ export const ngos = pgTable("ngos", {
   description: text().notNull(),
   // Receives the optional unrestricted share of a gift.
   paypalEmail: text().notNull(),
+  // Charity verification: only verified (or demo) charities can post needs. See src/lib/verify.ts.
+  status: ngoStatus().notNull().default("unverified"),
+  ein: text().unique(), // IRS employer identification number, digits only
+  irsName: text(),
+  irsLocation: text(), // "City, ST" from the IRS record
+  website: text(),
+  verifyToken: text(),
+  verification: jsonb().$type<NgoVerification>(),
+  verifiedAt: timestamp({ withTimezone: true }),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
+
+export interface NgoVerification {
+  method: "meta_tag" | "well_known_file";
+  checkedUrl: string;
+  official: "yes" | "no" | "unsure"; // web research: is this the charity's official website?
+  evidence: string;
+  sources: { title: string; url: string }[];
+}
 
 export const vendors = pgTable("vendors", {
   id: serial().primaryKey(),

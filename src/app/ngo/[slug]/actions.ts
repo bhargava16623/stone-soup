@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db/index.ts";
 import { confirmDelivery, DeliveryError, writeImpactUpdates } from "@/lib/delivery.ts";
 import { draftNeeds, draftNeedsFromPhoto, publishNeed, type NeedDraft, type PhotoDraft, type PublishInput } from "@/lib/intake.ts";
+import { checkWebsite, VerifyError } from "@/lib/verify.ts";
 
 // Demo note: there are no logins; anyone on an NGO's dashboard acts as that NGO.
 
@@ -78,5 +79,17 @@ export async function confirmDeliveryAction(
   } catch (e) {
     if (!(e instanceof DeliveryError)) console.error("confirmDelivery failed", e);
     return fail(e);
+  }
+}
+
+export async function checkWebsiteAction(ngoSlug: string): Promise<Result<{ status: string }>> {
+  try {
+    const ngo = await checkWebsite(ngoSlug);
+    revalidatePath(`/ngo/${ngoSlug}`);
+    revalidatePath(`/ngo/${ngoSlug}/verify`);
+    return { ok: true, data: { status: ngo.status } };
+  } catch (e) {
+    if (!(e instanceof VerifyError)) console.error("checkWebsite failed", e);
+    return e instanceof VerifyError ? fail(e) : { ok: false, error: "Something went wrong while checking. Try again." };
   }
 }

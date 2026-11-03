@@ -1,6 +1,7 @@
 import "server-only";
 import { desc, sql } from "drizzle-orm";
 import { db } from "@/db/index.ts";
+import { canPostNeeds } from "./verify.ts";
 
 const urgencyRank = { high: 0, medium: 1, low: 2 } as const;
 
@@ -10,7 +11,8 @@ export async function getOpenNeeds() {
     where: (n, { eq }) => eq(n.status, "open"),
     with: { ngo: true, vendor: true, catalogItem: true },
   });
-  return rows.sort(
+  // Belt and braces: needs can only be posted by verified charities, but never list one that isn't.
+  return rows.filter((n) => canPostNeeds(n.ngo.status)).sort(
     (a, b) => urgencyRank[a.urgency] - urgencyRank[b.urgency] || (a.deadline ?? "").localeCompare(b.deadline ?? ""),
   );
 }

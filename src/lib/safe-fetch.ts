@@ -64,6 +64,7 @@ export interface FetchedPage {
   title: string;
   description: string;
   text: string; // visible text, truncated
+  verificationMeta: string; // <meta name="stone-soup-verification" content="…">, for charity verification
 }
 
 export async function fetchPublicPage(raw: string): Promise<FetchedPage> {
@@ -117,6 +118,7 @@ export async function fetchPublicPage(raw: string): Promise<FetchedPage> {
       title: meta(html, "og:title") || decodeEntities(html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? "").trim(),
       description: meta(html, "og:description") || meta(html, "description"),
       text: text.slice(0, 12_000),
+      verificationMeta: meta(html, "stone-soup-verification"),
     };
   }
   throw new FetchRefused("Too many redirects");
