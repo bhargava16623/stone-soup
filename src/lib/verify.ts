@@ -31,12 +31,15 @@ const titleCase = (s: string) => s.toLowerCase().replace(/\b[a-z]/g, (c) => c.to
 export async function lookupEin(raw: string): Promise<IrsRecord> {
   const ein = raw.replace(/\D/g, "");
   if (ein.length !== 9) throw new VerifyError("An EIN has 9 digits, like 12-3456789");
-  const res = await fetch(`https://projects.propublica.org/nonprofits/api/v2/organizations/${ein}.json`, {
-    signal: AbortSignal.timeout(8000),
-    headers: { Accept: "application/json" },
-  }).catch(() => {
-    throw new VerifyError("The IRS records lookup didn't respond. Try again in a moment.");
-  });
+  const url = `https://projects.propublica.org/nonprofits/api/v2/organizations/${ein}.json`;
+  const get = () => fetch(url, { signal: AbortSignal.timeout(8000), headers: { Accept: "application/json" } });
+  // One retry: the public API occasionally drops a request.
+  const res = await get()
+    .then((r) => (r.status >= 500 ? get() : r))
+    .catch(() => get())
+    .catch(() => {
+      throw new VerifyError("The IRS records lookup didn't respond. Try again in a moment.");
+    });
   if (res.status === 404) throw new VerifyError("No registered nonprofit has that EIN");
   if (!res.ok) throw new VerifyError("The IRS records lookup didn't respond. Try again in a moment.");
   const { organization: o } = (await res.json()) as {

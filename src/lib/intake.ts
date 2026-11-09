@@ -182,18 +182,34 @@ export async function draftNeedsFromPhoto(imageBase64: string, mimeType: string,
   // Gemini works out the amount; the division into catalog units is done here, where it can't slip.
   for (const n of data.needs) {
     const size = n.unitSize && n.unitSize > 0 ? n.unitSize : 1;
-    n.quantity = Math.ceil((n.neededAmount ?? 0) / size - 1e-9);
-    if (size !== 1) n.quantityReasoning = `${n.quantityReasoning.trim()} ÷ ${size} ${n.measure} each → ${n.quantity}`;
+    const reasoning = n.quantityReasoning.trim();
+    // Sometimes the model divides by the pack size itself ("… / 25 lb per bag = 3.36 bags") despite being
+    // told not to; then neededAmount is already in packs and dividing again would give 1 bag for 84 lb.
+    const lastNumber = Number(reasoning.match(/([\d,]*\.?\d+)[^\d]*$/)?.[1]?.replace(/,/g, ""));
+    const alreadyDivided =
+      size !== 1 &&
+      new RegExp(`[÷/]\\s*${size}(?![\\d.])`).test(reasoning) &&
+      Math.abs(lastNumber - (n.neededAmount ?? NaN)) < 0.01;
+    n.quantity = Math.ceil((n.neededAmount ?? 0) / (alreadyDivided ? 1 : size) - 1e-9);
+    if (alreadyDivided) n.quantityReasoning = `${reasoning} → ${n.quantity}`;
+    else if (size !== 1) n.quantityReasoning = `${reasoning} ÷ ${size} ${n.measure} each → ${n.quantity}`;
     // Drop a count the model put in front anyway (but keep sizes like "25 lb bags").
     const lead = Number(n.title.trim().match(/^([\d,.]+)\s/)?.[1]?.replace(/,/g, ""));
     const rest = lead === n.quantity || lead === n.neededAmount ? n.title.trim().replace(/^[\d,.]+\s*/, "") : n.title.trim();
-    n.title = `${n.quantity} ${rest}`;
+    n.title = `${n.quantity} ${n.quantity === 1 ? singularFirstWord(rest) : rest}`;
   }
   return {
     summary: data.photoSummary,
     looksLikeStorage: data.looksLikeStorage,
     drafts: data.looksLikeStorage ? toDrafts({ needs: data.needs.filter((n) => n.quantity > 0) }, catalog) : [],
   };
+}
+
+/** "bags of rice" → "bag of rice" for a quantity of one. */
+function singularFirstWord(title: string): string {
+  return title.replace(/^(\w+?)(es|s)\b/i, (w, stem: string, end: string) =>
+    end.toLowerCase() === "es" && !/(x|s|ch|sh)$/i.test(stem) ? `${stem}e` : stem,
+  );
 }
 
 /**
@@ -209,6 +225,16 @@ function checkArithmetic(reasoning: string, quantity: number): { reasoning: stri
   if (correct === stated) return { reasoning, quantity };
   const fixed = reasoning.slice(0, m.index! + m[0].length - m[3].length) + correct + reasoning.slice(m.index! + m[0].length);
   return { reasoning: fixed, quantity: quantity === stated ? correct : quantity };
+}
+
+/** Keep a title's leading count ("3 bags of rice") in step with the checked quantity. */
+function syncTitleNumber(title: string, quantity: number): string {
+  const t = title.trim();
+  const m = t.match(/^(\d[\d,]*)\s*(\S+)/);
+  if (!m || Number(m[1].replace(/,/g, "")) === quantity) return t;
+  // "25 lb bags of rice": the number is a size, not a count.
+  if (/^(lb|lbs|kg|g|oz|l|ml|litre|liter|gallon|in|inch|cm|ft|pack|-)/i.test(m[2])) return t;
+  return `${quantity} ${t.slice(m[1].length).trimStart()}`;
 }
 
 type CatalogWithVendor = Awaited<ReturnType<typeof activeCatalog>>["catalog"];
@@ -236,12 +262,13 @@ function toDrafts(data: Extracted, catalog: CatalogWithVendor): NeedDraft[] {
       // Fairly priced options first, then cheapest.
       .sort((a, b) => Number(a.verdict === "above_market") - Number(b.verdict === "above_market") || a.unitPriceCents - b.unitPriceCents);
 
+    const quantity = Math.max(1, Math.min(10_000, math.quantity));
     return {
       key: `${Date.now()}-${i}`,
-      title: n.title,
+      title: syncTitleNumber(n.title, quantity),
       story: n.story,
       requestedItem: n.item,
-      quantity: Math.max(1, Math.min(10_000, math.quantity)),
+      quantity,
       quantityNote: math.reasoning || null,
       seen: n.seen?.trim() || null,
       urgency: n.urgency,
