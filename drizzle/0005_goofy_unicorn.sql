@@ -1,0 +1,1 @@
+ALTER TABLE "deliveries" ADD COLUMN "photo_dhash" text;

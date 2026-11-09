@@ -147,7 +147,7 @@ interface OrderResponse {
 
 /** Capture an approved order. */
 export async function captureOrder(orderId: string): Promise<CaptureResult> {
-  const order = await api<OrderResponse>("POST", `/v2/checkout/orders/${orderId}/capture`, {}, `capture-${orderId}`);
+  const order = await api<OrderResponse>("POST", `/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`, {}, `capture-${orderId}`);
   return {
     orderId: order.id,
     status: order.status,

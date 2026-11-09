@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/index.ts";
 import { addCatalogItems, readPriceList, type CatalogEntry } from "@/lib/catalog.ts";
+import { ALLOWED_PHOTO_TYPES } from "@/lib/photos.ts";
+import { limitAction } from "@/lib/rate-limit.ts";
 
 // Demo note: there are no logins; anyone on a vendor's page acts as that vendor.
 
@@ -17,7 +19,8 @@ const MAX_IMAGE_BASE64 = 1_400_000; // ~1 MB image after base64
 
 export async function readPriceListAction(imageBase64: string, mimeType: string): Promise<Result<CatalogEntry[]>> {
   try {
-    if (!mimeType.startsWith("image/")) throw new Error("Upload an image");
+    await limitAction("price-list", 8);
+    if (!ALLOWED_PHOTO_TYPES.includes(mimeType)) throw new Error("Upload a JPEG, PNG, WebP or HEIC image");
     if (imageBase64.length > MAX_IMAGE_BASE64) throw new Error("That image is too large");
     const items = await readPriceList(imageBase64, mimeType);
     if (items.length === 0) throw new Error("We couldn't read any priced items in that photo");

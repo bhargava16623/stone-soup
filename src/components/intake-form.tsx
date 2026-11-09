@@ -34,7 +34,7 @@ export function IntakeForm({ ngoSlug }: { ngoSlug: string }) {
   function draft() {
     setError(null);
     startDrafting(async () => {
-      const res = await draftNeedsAction(text);
+      const res = await draftNeedsAction(ngoSlug, text);
       if (!res.ok) return setError(res.error);
       if (res.data.length === 0) return setError("We couldn't find any items in that. Try naming what you need.");
       setDrafts(res.data.map((d) => ({ ...d, justification: "" })));
@@ -58,7 +58,7 @@ export function IntakeForm({ ngoSlug }: { ngoSlug: string }) {
     if (!photo) return;
     setError(null);
     startDrafting(async () => {
-      const res = await draftNeedsFromPhotoAction({ photoBase64: photo.base64, photoMime: photo.mimeType, note });
+      const res = await draftNeedsFromPhotoAction(ngoSlug, { photoBase64: photo.base64, photoMime: photo.mimeType, note });
       if (!res.ok) return setError(res.error);
       setPhotoSummary(res.data.summary);
       if (!res.data.looksLikeStorage) return setError("This doesn't look like a storeroom or supply shelf. Try a photo of where you keep supplies.");

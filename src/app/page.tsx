@@ -101,7 +101,7 @@ async function ImpactStrip() {
   const s = await getImpactStats();
   const stats = [
     { value: formatUsd(s.paidCents), label: "paid straight to suppliers" },
-    { value: s.itemsFunded.toLocaleString("en-US"), label: "items funded" },
+    { value: s.itemsFunded.toLocaleString("en-US"), label: s.itemsFunded === 1 ? "item funded" : "items funded" },
     { value: s.itemsDelivered.toLocaleString("en-US"), label: "delivered and verified" },
     { value: `${s.ngos} · ${s.suppliers}`, label: "charities · local suppliers" },
   ];

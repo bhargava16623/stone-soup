@@ -32,6 +32,17 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      # Signs reviewer and charity-owner cookies; Render generates it.
+      - key: SESSION_SECRET
+        generateValue: true
+      # Entered on /review to approve charities and flagged deliveries.
+      - key: REVIEW_KEY
+        sync: false
+      - key: CRON_SECRET
+        generateValue: true
+      # https://<your-app>.onrender.com — used for PayPal return links, AI assistants and the live-wall QR code.
+      - key: PUBLIC_BASE_URL
+        sync: false
 
 databases:
   - name: stone-soup-db

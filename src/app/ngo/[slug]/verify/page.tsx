@@ -7,6 +7,7 @@ import { CopyText } from "@/components/copy-text.tsx";
 import { PageHeader } from "@/components/page-header.tsx";
 import { db } from "@/db/index.ts";
 import { formatEin } from "@/lib/verify.ts";
+import { canManageNgo } from "@/lib/access.ts";
 
 export default function VerifyPage({ params }: PageProps<"/ngo/[slug]/verify">) {
   return (
@@ -36,6 +37,7 @@ async function Verify({ params }: { params: PageProps<"/ngo/[slug]/verify">["par
   }
 
   const v = ngo.verification;
+  const owner = await canManageNgo(ngo);
   return (
     <div className="space-y-6">
       <PageHeader icon={ShieldCheck} eyebrow="Verification" title={`Prove you run ${ngo.name}`}>
@@ -47,7 +49,9 @@ async function Verify({ params }: { params: PageProps<"/ngo/[slug]/verify">["par
       </Step>
 
       <Step done={ngo.status !== "unverified"} title={`Show you control ${ngo.website}`}>
-        {ngo.status === "unverified" ? (
+        {ngo.status === "unverified" && !owner ? (
+          <p>Waiting for the person who registered this charity to publish their code. Only they can see it.</p>
+        ) : ngo.status === "unverified" ? (
           <div className="mt-3 space-y-4">
             <p>Do one of these, publish the change, then press the button. You can remove it once you&apos;re verified.</p>
             <div>

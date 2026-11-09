@@ -7,6 +7,7 @@ import { PrintButton } from "@/components/print-button.tsx";
 import { ProductImage } from "@/components/product-image.tsx";
 import { formatUsd } from "@/lib/fees.ts";
 import { getReportFacts, writeReportNarrative, type ReportFacts } from "@/lib/report.ts";
+import { plural } from "@/lib/plural.ts";
 
 export default function ReportPage({ params }: PageProps<"/ngo/[slug]/report">) {
   return (
@@ -125,10 +126,10 @@ async function Report({ params }: { params: PageProps<"/ngo/[slug]/report">["par
           </li>
           <li>
             <span className="font-medium">Deliveries verified</span> with photos checked by AI and a fingerprint against reuse
-            {facts.flaggedDeliveries ? `; ${facts.flaggedDeliveries} delivery was sent for human review` : ""}.
+            {facts.flaggedDeliveries ? `; ${plural(facts.flaggedDeliveries, "delivery", "deliveries")} ${facts.flaggedDeliveries === 1 ? "was" : "were"} sent for human review` : ""}.
           </li>
           <li>
-            <span className="font-medium">{facts.gifts} gifts</span> from {facts.donors} donors
+            <span className="font-medium">{plural(facts.gifts, "gift")}</span> from {plural(facts.donors, "donor")}
             {facts.giftsViaAgent ? `, ${facts.giftsViaAgent} arranged by the Giving Agent` : ""}. Every gift is listed in the public
             ledger.
           </li>

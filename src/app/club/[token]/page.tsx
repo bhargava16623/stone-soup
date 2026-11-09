@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/page-header.tsx";
 import { ProductImage } from "@/components/product-image.tsx";
 import { ClubError, getClubDashboard } from "@/lib/club.ts";
 import { formatUsd } from "@/lib/fees.ts";
+import { plural } from "@/lib/plural.ts";
 
 export default function ClubMemberPage({ params }: PageProps<"/club/[token]">) {
   return (
@@ -101,7 +102,7 @@ async function Dashboard({ params }: { params: PageProps<"/club/[token]">["param
                     <span>
                       <span className="font-medium">{monthName(b.month)}</span>{" "}
                       <span className="text-muted">
-                        · {b.items.reduce((s, i) => s + i.units, 0)} items · {formatUsd(b.totalCents)}
+                        · {plural(b.items.reduce((s, i) => s + i.units, 0), "item")} · {formatUsd(b.totalCents)}
                       </span>
                     </span>
                     {b.status === "paid" && b.paypalOrderId ? (

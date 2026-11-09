@@ -13,7 +13,8 @@ export interface ReportFacts {
   unitsDelivered: number;
   valueDeliveredCents: number;
   savedVsMarketCents: number; // (market median − price paid) × units, for benchmarked items
-  fundedCents: number; // paid to suppliers for this NGO's needs
+  fundedCents: number; // paid to suppliers for the items in this NGO's needs
+  feesCoveredCents: number; // PayPal fees donors chose to cover on top, so suppliers got the full price
   donors: number;
   giftsViaAgent: number;
   gifts: number;
@@ -45,6 +46,7 @@ export async function getReportFacts(slug: string): Promise<ReportFacts | undefi
   const donors = new Set<string>();
   let saved = 0;
   let funded = 0;
+  let fees = 0;
   let gifts = 0;
   let viaAgent = 0;
   const photos: ReportFacts["photos"] = [];
@@ -68,6 +70,7 @@ export async function getReportFacts(slug: string): Promise<ReportFacts | undefi
       if (d.order.source === "agent") viaAgent++;
       donors.add(d.order.donorEmail ?? d.order.donorName ?? `order-${d.orderId}`);
       funded += d.vendorAmountCents - d.feeCoverCents;
+      fees += d.feeCoverCents;
       suppliers.set(need.vendor.name, (suppliers.get(need.vendor.name) ?? 0) + d.vendorAmountCents - d.feeCoverCents);
     }
   }
@@ -81,6 +84,7 @@ export async function getReportFacts(slug: string): Promise<ReportFacts | undefi
     valueDeliveredCents: itemsDelivered.reduce((s, i) => s + i.valueCents, 0),
     savedVsMarketCents: saved,
     fundedCents: funded,
+    feesCoveredCents: fees,
     donors: donors.size,
     giftsViaAgent: viaAgent,
     gifts,
@@ -92,11 +96,19 @@ export async function getReportFacts(slug: string): Promise<ReportFacts | undefi
   };
 }
 
-const NARRATIVE_SYSTEM = `Write the summary section of a short report a small charity sends to a funder or its board.
+const NARRATIVE_SYSTEM = `Write the summary section of a short report about a charity, for its funders or board.
+Write in the third person about the charity, by name ("Hope Shelter received…"), never as "we" or "our".
 Use only the facts provided; every number you mention must appear in them. Plain, warm, specific language;
-no exaggeration, no invented outcomes or people. Two short paragraphs: what was received and delivered, then
-how it was made accountable (suppliers paid directly via PayPal, prices checked against the market, deliveries
-verified with photos). If nothing has been delivered yet, say so plainly.`;
+no exaggeration, no invented outcomes or people. Two short paragraphs:
+1. What donors paid for (fundedToSuppliers is the price of the items; feesCovered is extra PayPal fees donors
+   chose to cover) and what has been delivered so far. If unitsDelivered is 0, say simply that the items are
+   paid for and on their way from the supplier, and that deliveries will appear here once confirmed. Don't
+   explain why with other numbers such as open needs.
+Write like a person, never like a database: don't mention field names or phrases like "units delivered stand
+at 0". Example of the tone: "Donors paid $18.00 for items from Sunrise Supplies, and covered $1.16 in PayPal
+fees so the supplier received the full price. The items are on their way."
+2. How it was made accountable: suppliers paid directly through PayPal, prices checked against the market,
+   deliveries verified with photos.`;
 
 /** Narrative for a report, cached per set of facts so re-opening the report doesn't call Gemini again. */
 export async function writeReportNarrative(factsJson: string): Promise<string> {
@@ -108,6 +120,7 @@ export async function writeReportNarrative(factsJson: string): Promise<string> {
     valueDelivered: formatUsd(facts.valueDeliveredCents),
     savedVsMarket: formatUsd(facts.savedVsMarketCents),
     fundedToSuppliers: formatUsd(facts.fundedCents),
+    feesCovered: formatUsd(facts.feesCoveredCents),
     photos: facts.photos.map((p) => p.caption),
   };
   const { text } = await generate(JSON.stringify(readable), { system: NARRATIVE_SYSTEM });

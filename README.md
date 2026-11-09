@@ -31,7 +31,7 @@ flowchart LR
   Donor["Donor or Giving Agent"] -->|PayPal Orders v2<br/>payee = supplier| Supplier["Supplier paid directly"]
   Feed --> Donor
   Supplier --> Delivery["Charity photographs the delivery"]
-  Delivery -->|Gemini vision + photo hash| Verify["Verified or flagged for review"]
+  Delivery -->|Gemini vision + photo fingerprint| Verify["Verified or flagged for review"]
   Verify -->|Gemini| Update["Personal update to each donor"]
   Verify --> Ledger["Open ledger (AG Grid)"]
 ```
@@ -48,8 +48,9 @@ flowchart LR
    open needs and proposes a basket through function calls; the server prices and validates every
    proposal and reports the remaining budget so the agent can improve it. The donor approves once.
 5. **Delivery is confirmed with a photo.** Gemini vision checks the item, rough quantity and whether the
-   photo looks genuine; a SHA-256 hash catches reused photos. Doubtful deliveries go to a human review
-   queue — nothing is rejected automatically.
+   photo looks genuine. Each photo is fingerprinted (an exact SHA-256 hash plus a perceptual hash), so a
+   photo reused for another delivery is caught even after it has been re-saved, resized or cropped. Doubtful
+   deliveries go to a human review queue — nothing is rejected automatically.
 6. **Donors hear back.** Delivered units are allocated to gifts in order, and each donor whose units
    arrived gets a short personal update with the photo.
 7. **Everything is public** in the open ledger: gift, supplier paid, amount, PayPal capture ID, price check
@@ -82,7 +83,7 @@ timeouts, and a cooldown for overloaded models.
 | Price-list photo → catalog | Vision + structured output | [`src/lib/catalog.ts`](src/lib/catalog.ts) |
 | Market price relevance filter | Classification over Channel3 results | [`src/lib/relevance.ts`](src/lib/relevance.ts) |
 | Giving Agent | Function calling loop (`search_needs`, `propose_basket`) with server-side validation | [`src/lib/agent.ts`](src/lib/agent.ts) |
-| Delivery check | Vision + structured output, plus photo hashing | [`src/lib/delivery.ts`](src/lib/delivery.ts) |
+| Delivery check | Vision + structured output, plus exact and perceptual photo hashes | [`src/lib/delivery.ts`](src/lib/delivery.ts) |
 | Donor impact updates | Grounded generation from delivery facts | [`src/lib/delivery.ts`](src/lib/delivery.ts) |
 | Snap the shelf | Vision + structured output; quantities computed in code | [`src/lib/intake.ts`](src/lib/intake.ts) |
 | Scam Check | Google Search grounding, then structured assessment | [`src/lib/scam-check.ts`](src/lib/scam-check.ts) |
@@ -107,8 +108,9 @@ timeouts, and a cooldown for overloaded models.
   Stone Soup never makes a page for a charity on its own, and no one can post needs in a charity's name
   without proving they run it. The EIN must be a 501(c)(3) in IRS data (ProPublica Nonprofit Explorer); the
   charity publishes a code on its own website; Gemini with Google Search checks that the website is the
-  charity's official one. If it can't confirm that, a person reviews the claim. A second claim on the same EIN
-  is refused. (Answers the 2026 multistate complaint about donation pages created for charities without
+  charity's official one. If it can't confirm that, a reviewer (with the `REVIEW_KEY`) confirms the claim. A
+  second claim on the same EIN is refused, and a registered charity's dashboard works only from the browser
+  that registered it. (Answers the 2026 multistate complaint about donation pages created for charities without
   consent.)
 - **Scam Check** ([`/check`](src/app/check/page.tsx)) — paste any appeal (link, text or screenshot);
   Gemini with Google Search grounding lists red flags with evidence and how to verify, and suggests
@@ -142,7 +144,7 @@ passed to the agent as data, not instructions; flagged deliveries always go to a
 2. **Configure:**
    ```bash
    git clone https://github.com/bhargava16623/stone-soup.git && cd stone-soup
-   cp .env.example .env   # fill in the values
+   cp .env.example .env   # fill in the values (SESSION_SECRET: `openssl rand -base64 32`; REVIEW_KEY: any passphrase)
    npm install
    ```
 3. **Database:**
@@ -158,6 +160,7 @@ passed to the agent as data, not instructions; flagged deliveries always go to a
    ```
 5. **Try it:** fund a need with the sandbox personal account, ask the Giving Agent for a basket, post a
    need as Hope Shelter (*For organisations*), confirm a delivery with a photo, and check the ledger.
+   To approve flagged deliveries or charity claims, open `/review` and enter your `REVIEW_KEY`.
 
 ## Deploy to Render
 
@@ -182,7 +185,7 @@ src/app/               pages and API routes (Next.js App Router)
   club/                Soup Club monthly giving
   check/               Scam Check
   connect/             give from any AI (MCP setup)
-  review/              review queue for flagged deliveries
+  review/              review queue for charity claims and flagged deliveries (REVIEW_KEY)
   api/mcp/             MCP server
   api/checkout/        create and capture PayPal orders
   api/paypal/webhook/  verified PayPal webhooks
@@ -195,8 +198,12 @@ scripts/               seed script and spikes
 
 - **Sandbox only.** Suppliers are sandbox business accounts; the market check uses real retail prices
   from Channel3, but purchases go to the demo suppliers.
-- **No logins.** Charity and supplier dashboards are open for the demo ("acting as"). The two seeded
-  charities are fictional and labelled "Demo charity"; real charities register and verify at `/ngo/join`.
+- **No accounts.** The two seeded charities are fictional, labelled "Demo charity", and their dashboards
+  are open so anyone can try them. A charity registered at `/ngo/join` is managed only from the browser
+  that registered it (a signed cookie). Production would use real sign-in with recovery. Reviewers unlock
+  `/review` with a shared key. Supplier dashboards are open for the demo.
+- **Rate limits are per server.** The AI endpoints are rate-limited per IP in memory, which is fine for one
+  instance; scaling out would need a shared store.
 - **Tax receipts.** In production, a fiscal sponsor or donor-advised fund would be the legal recipient
   so gifts are deductible; the demo doesn't claim deductibility.
 - **Market data.** Channel3 covers retail goods well and groceries poorly; items without reliable data

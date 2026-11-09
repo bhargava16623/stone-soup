@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, ShieldAlert } from "lucide-react";
+import { FileText, Lock, ShieldAlert } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { DeliveryForm } from "@/components/delivery-form.tsx";
@@ -7,6 +7,7 @@ import { IntakeForm } from "@/components/intake-form.tsx";
 import { CharityBadge, FairPriceBadge } from "@/components/need-bits.tsx";
 import { getNgoDashboard } from "@/lib/queries.ts";
 import { canPostNeeds } from "@/lib/verify.ts";
+import { canManageNgo } from "@/lib/access.ts";
 
 export default function NgoDashboardPage({ params }: PageProps<"/ngo/[slug]">) {
   return (
@@ -22,16 +23,29 @@ async function Dashboard({ params }: { params: PageProps<"/ngo/[slug]">["params"
   const { slug } = await params;
   const ngo = await getNgoDashboard(slug);
   if (!ngo) notFound();
+  const owner = await canManageNgo(ngo);
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_420px]">
       <section className="space-y-4">
-        <p className="text-sm text-muted">Acting as (demo)</p>
+        <p className="text-sm text-muted">{ngo.status === "demo" ? "Demo dashboard: anyone can try it" : owner ? "Your dashboard" : "Charity dashboard"}</p>
         <h1 className="flex flex-wrap items-center gap-3 font-serif text-3xl font-semibold">
           {ngo.name} <CharityBadge ngo={ngo} />
         </h1>
         <p className="text-muted">{ngo.description}</p>
-        {canPostNeeds(ngo.status) ? (
+        {!owner ? (
+          <p className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-5 text-sm text-muted">
+            <Lock className="mt-0.5 h-5 w-5 shrink-0" />
+            <span>
+              Only the person who registered {ngo.name} can post needs or confirm deliveries here, from the browser they
+              registered with. You can still see its needs and its{" "}
+              <Link href={`/ngo/${ngo.slug}/report`} className="text-accent hover:underline">
+                funder report
+              </Link>
+              .
+            </span>
+          </p>
+        ) : canPostNeeds(ngo.status) ? (
           <IntakeForm ngoSlug={ngo.slug} />
         ) : (
           <Link
@@ -78,7 +92,7 @@ async function Dashboard({ params }: { params: PageProps<"/ngo/[slug]">["params"
                 <p className="mt-1 text-muted">
                   {statusLabel[n.status]} · {n.fundedUnits}/{n.quantity} funded · {n.deliveredUnits} delivered · {n.vendor.name}
                 </p>
-                {n.fundedUnits > n.deliveredUnits && (
+                {owner && n.fundedUnits > n.deliveredUnits && (
                   <DeliveryForm
                     ngoSlug={ngo.slug}
                     needId={n.id}

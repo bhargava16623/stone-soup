@@ -6,7 +6,7 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { Type } from "@google/genai";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, schema } from "@/db/index.ts";
 import type { NgoVerification } from "@/db/schema.ts";
 import { generateJson, generateResponse } from "./gemini.ts";
@@ -219,11 +219,14 @@ export async function getCharitiesToReview() {
   return db.query.ngos.findMany({ where: (n, { eq }) => eq(n.status, "review") });
 }
 
+/** A reviewer confirmed the website is the charity's own. Only charities waiting for review can be approved. */
 export async function approveCharity(id: number) {
-  await db
+  const [ngo] = await db
     .update(schema.ngos)
     .set({ status: "verified", verifiedAt: new Date() })
-    .where(eq(schema.ngos.id, id));
+    .where(and(eq(schema.ngos.id, id), eq(schema.ngos.status, "review")))
+    .returning({ id: schema.ngos.id });
+  if (!ngo) throw new VerifyError("This charity isn't waiting for review");
 }
 
 /** Whether a charity may post needs and receive gifts. */

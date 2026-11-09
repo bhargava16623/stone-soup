@@ -5,8 +5,12 @@ import { db } from "@/db/index.ts";
 import { confirmDelivery, DeliveryError, writeImpactUpdates } from "@/lib/delivery.ts";
 import { draftNeeds, draftNeedsFromPhoto, publishNeed, type NeedDraft, type PhotoDraft, type PublishInput } from "@/lib/intake.ts";
 import { checkWebsite, VerifyError } from "@/lib/verify.ts";
+import { AccessError, assertCanManageNgo } from "@/lib/access.ts";
+import { limitAction, RateLimitError } from "@/lib/rate-limit.ts";
+import { ALLOWED_PHOTO_TYPES } from "@/lib/photos.ts";
 
-// Demo note: there are no logins; anyone on an NGO's dashboard acts as that NGO.
+// There are no accounts. Seeded demo charities are open to everyone; a registered charity's
+// dashboard works only from the browser that registered it (see lib/access.ts).
 
 const MAX_PHOTO_BASE64 = 1_400_000;
 
@@ -17,30 +21,47 @@ const fail = (e: unknown): { ok: false; error: string } => ({
   error: e instanceof Error ? e.message : "Something went wrong",
 });
 
-export async function draftNeedsAction(request: string): Promise<Result<NeedDraft[]>> {
+async function managedNgo(slug: string) {
+  const ngo = await db.query.ngos.findFirst({ where: (n, { eq }) => eq(n.slug, slug) });
+  if (!ngo) throw new Error("Unknown organisation");
+  await assertCanManageNgo(ngo);
+  return ngo;
+}
+
+function checkPhoto(mime: string, base64: string) {
+  if (!ALLOWED_PHOTO_TYPES.includes(mime)) throw new Error("Upload a JPEG, PNG, WebP or HEIC photo");
+  if (base64.length > MAX_PHOTO_BASE64) throw new Error("That photo is too large");
+}
+
+export async function draftNeedsAction(ngoSlug: string, request: string): Promise<Result<NeedDraft[]>> {
   try {
+    await managedNgo(ngoSlug);
+    await limitAction("intake", 10);
     return { ok: true, data: await draftNeeds(request) };
   } catch (e) {
-    console.error("draftNeeds failed", e);
+    if (!(e instanceof AccessError || e instanceof RateLimitError)) console.error("draftNeeds failed", e);
     return fail(e);
   }
 }
 
-export async function draftNeedsFromPhotoAction(input: { photoBase64: string; photoMime: string; note: string }): Promise<Result<PhotoDraft>> {
+export async function draftNeedsFromPhotoAction(
+  ngoSlug: string,
+  input: { photoBase64: string; photoMime: string; note: string },
+): Promise<Result<PhotoDraft>> {
   try {
-    if (!input.photoMime.startsWith("image/")) throw new Error("Upload a photo");
-    if (input.photoBase64.length > MAX_PHOTO_BASE64) throw new Error("That photo is too large");
+    await managedNgo(ngoSlug);
+    await limitAction("intake", 10);
+    checkPhoto(input.photoMime, input.photoBase64);
     return { ok: true, data: await draftNeedsFromPhoto(input.photoBase64, input.photoMime, input.note) };
   } catch (e) {
-    console.error("draftNeedsFromPhoto failed", e);
+    if (!(e instanceof AccessError || e instanceof RateLimitError)) console.error("draftNeedsFromPhoto failed", e);
     return fail(e);
   }
 }
 
 export async function publishNeedAction(ngoSlug: string, input: Omit<PublishInput, "ngoId">): Promise<Result<{ id: number }>> {
   try {
-    const ngo = await db.query.ngos.findFirst({ where: (n, { eq }) => eq(n.slug, ngoSlug) });
-    if (!ngo) throw new Error("Unknown organisation");
+    const ngo = await managedNgo(ngoSlug);
     const need = await publishNeed({ ...input, ngoId: ngo.id });
     revalidatePath("/");
     revalidatePath(`/ngo/${ngoSlug}`);
@@ -62,10 +83,9 @@ export async function confirmDeliveryAction(
   input: { needId: number; units: number; note: string; photoBase64: string; photoMime: string },
 ): Promise<Result<DeliveryOutcome>> {
   try {
-    const ngo = await db.query.ngos.findFirst({ where: (n, { eq }) => eq(n.slug, ngoSlug) });
-    if (!ngo) throw new Error("Unknown organisation");
-    if (!input.photoMime.startsWith("image/")) throw new Error("Upload a photo");
-    if (input.photoBase64.length > MAX_PHOTO_BASE64) throw new Error("That photo is too large");
+    const ngo = await managedNgo(ngoSlug);
+    await limitAction("delivery", 10);
+    checkPhoto(input.photoMime, input.photoBase64);
     const delivery = await confirmDelivery({ ...input, ngoId: ngo.id });
 
     let updatesSent = 0;
@@ -77,19 +97,22 @@ export async function confirmDeliveryAction(
     revalidatePath(`/needs/${input.needId}`);
     return { ok: true, data: { verdict: delivery.verdict, summary: delivery.summary, concerns: delivery.concerns, updatesSent } };
   } catch (e) {
-    if (!(e instanceof DeliveryError)) console.error("confirmDelivery failed", e);
+    if (!(e instanceof DeliveryError || e instanceof AccessError || e instanceof RateLimitError)) console.error("confirmDelivery failed", e);
     return fail(e);
   }
 }
 
 export async function checkWebsiteAction(ngoSlug: string): Promise<Result<{ status: string }>> {
   try {
+    await managedNgo(ngoSlug);
+    await limitAction("check-website", 6);
     const ngo = await checkWebsite(ngoSlug);
     revalidatePath(`/ngo/${ngoSlug}`);
     revalidatePath(`/ngo/${ngoSlug}/verify`);
     return { ok: true, data: { status: ngo.status } };
   } catch (e) {
-    if (!(e instanceof VerifyError)) console.error("checkWebsite failed", e);
-    return e instanceof VerifyError ? fail(e) : { ok: false, error: "Something went wrong while checking. Try again." };
+    const known = e instanceof VerifyError || e instanceof AccessError || e instanceof RateLimitError;
+    if (!known) console.error("checkWebsite failed", e);
+    return known ? fail(e) : { ok: false, error: "Something went wrong while checking. Try again." };
   }
 }

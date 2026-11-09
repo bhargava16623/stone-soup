@@ -8,6 +8,7 @@ import { Type } from "@google/genai";
 import { db, schema } from "@/db/index.ts";
 import type { DeliveryCheck } from "@/db/schema.ts";
 import { generateJson } from "./gemini.ts";
+import { hashDistance, inspectPhoto, PhotoError, SAME_PHOTO_DISTANCE } from "./photos.ts";
 
 export class DeliveryError extends Error {}
 
@@ -62,12 +63,25 @@ export async function confirmDelivery(input: ConfirmDeliveryInput) {
   }
 
   const photo = Buffer.from(input.photoBase64, "base64");
+  let checked: Awaited<ReturnType<typeof inspectPhoto>>;
+  try {
+    checked = await inspectPhoto(photo);
+  } catch (e) {
+    throw e instanceof PhotoError ? new DeliveryError(e.message) : e;
+  }
   const photoHash = createHash("sha256").update(photo).digest("hex");
-  const reused = await db.query.deliveries.findFirst({ where: (d, { eq }) => eq(d.photoHash, photoHash) });
+  const exact = await db.query.deliveries.findFirst({ where: (d, { eq }) => eq(d.photoHash, photoHash), columns: { id: true } });
+  // Also catch the same picture re-saved, resized or lightly cropped.
+  const earlier = exact
+    ? []
+    : await db.query.deliveries.findMany({ where: (d, { isNotNull }) => isNotNull(d.photoDhash), columns: { photoDhash: true } });
+  const similar = earlier.some((d) => hashDistance(d.photoDhash!, checked.dhash) <= SAME_PHOTO_DISTANCE);
+  const reused = Boolean(exact) || similar;
 
-  const vision = await checkPhoto(input.photoBase64, input.photoMime, need.catalogItem.name, need.catalogItem.spec, input.units);
+  const vision = await checkPhoto(input.photoBase64, checked.mime, need.catalogItem.name, need.catalogItem.spec, input.units);
   const concerns = [...vision.concerns];
-  if (reused) concerns.unshift("This exact photo was already used for another delivery");
+  if (exact) concerns.unshift("This exact photo was already used for another delivery");
+  else if (similar) concerns.unshift("This looks like the same photo as an earlier delivery");
   const verified = !reused && vision.matchesItem && vision.looksAuthentic;
 
   return db.transaction(async (tx) => {
@@ -78,8 +92,9 @@ export async function confirmDelivery(input: ConfirmDeliveryInput) {
         units: input.units,
         note: input.note?.trim().slice(0, 500) || null,
         photo,
-        photoMime: input.photoMime,
+        photoMime: checked.mime,
         photoHash,
+        photoDhash: checked.dhash,
         verdict: verified ? "verified" : "flagged",
         aiSummary: vision.summary,
         aiCheck: {

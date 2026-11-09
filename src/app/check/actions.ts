@@ -2,6 +2,8 @@
 
 import { checkAppeal, type ScamCheckResult } from "@/lib/scam-check.ts";
 import { getOpenNeeds } from "@/lib/queries.ts";
+import { limitAction, RateLimitError } from "@/lib/rate-limit.ts";
+import { ALLOWED_PHOTO_TYPES } from "@/lib/photos.ts";
 
 export interface SuggestedNeed {
   id: number;
@@ -21,7 +23,8 @@ export async function checkAppealAction(input: {
   image?: { base64: string; mimeType: string };
 }): Promise<{ ok: true; data: ScamCheckResult & { needs: SuggestedNeed[] } } | { ok: false; error: string }> {
   try {
-    if (input.image && (!input.image.mimeType.startsWith("image/") || input.image.base64.length > MAX_IMAGE_BASE64)) {
+    await limitAction("scam-check", 8);
+    if (input.image && (!ALLOWED_PHOTO_TYPES.includes(input.image.mimeType) || input.image.base64.length > MAX_IMAGE_BASE64)) {
       throw new Error("Upload an image under 1 MB");
     }
     const result = await checkAppeal({
@@ -44,6 +47,7 @@ export async function checkAppealAction(input: {
       }));
     return { ok: true, data: { ...result, needs } };
   } catch (e) {
+    if (e instanceof RateLimitError) return { ok: false, error: e.message };
     console.error("scam check failed", e);
     const message = e instanceof Error && /Paste a link|Upload an image/.test(e.message) ? e.message : "The check couldn't finish. Please try again in a moment.";
     return { ok: false, error: message };

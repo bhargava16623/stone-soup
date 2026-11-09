@@ -3,7 +3,7 @@
 // Amounts are always computed here from the database, never taken from the client.
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import { db, schema } from "@/db/index.ts";
 import { feeCoverCents, MIN_NGO_SHARE_CENTS } from "./fees.ts";
 import { captureOrder, createOrder, MAX_PURCHASE_UNITS, type PurchaseUnit } from "./paypal.ts";
@@ -179,11 +179,14 @@ export async function completeCheckout(paypalOrderId: string) {
   const byRef = new Map(result.units.map((u) => [u.referenceId, u]));
   const allPaid = order.donations.every((d) => byRef.get(d.referenceId)?.status === "COMPLETED");
   if (result.status !== "COMPLETED" || !allPaid) {
-    await db.update(schema.orders).set({ status: "failed" }).where(eq(schema.orders.id, order.id));
+    await db.update(schema.orders).set({ status: "failed" }).where(and(eq(schema.orders.id, order.id), ne(schema.orders.status, "captured")));
     throw new DonationError(`Payment was not completed (${result.status})`);
   }
 
-  return db.transaction(async (tx) => {
+  const recorded = await db.transaction(async (tx) => {
+    // The browser return and the PayPal webhook can both get here at once (PayPal's idempotency
+    // hands both the same capture). Only the call that flips the order to "captured" records the
+    // gifts, so funded units are never counted twice.
     const [updated] = await tx
       .update(schema.orders)
       .set({
@@ -193,8 +196,9 @@ export async function completeCheckout(paypalOrderId: string) {
         donorEmail: result.payerEmail,
         capturedAt: new Date(),
       })
-      .where(eq(schema.orders.id, order.id))
+      .where(and(eq(schema.orders.id, order.id), ne(schema.orders.status, "captured")))
       .returning();
+    if (!updated) return null;
     for (const d of order.donations) {
       await tx
         .update(schema.donations)
@@ -218,4 +222,7 @@ export async function completeCheckout(paypalOrderId: string) {
     }
     return { ...updated, donations: order.donations };
   });
+  if (recorded) return recorded;
+  const current = await db.query.orders.findFirst({ where: (o, { eq }) => eq(o.id, order.id), with: { donations: true } });
+  return current!;
 }

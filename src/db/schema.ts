@@ -205,6 +205,8 @@ export const deliveries = pgTable(
     photoMime: text().notNull(),
     // SHA-256 of the photo, to catch the same picture used for two deliveries.
     photoHash: text().notNull(),
+    // Perceptual hash (dHash) to spot the same picture re-saved or resized; see lib/photos.ts.
+    photoDhash: text(),
     verdict: deliveryVerdict().notNull().default("pending"),
     aiSummary: text(),
     aiCheck: jsonb().$type<DeliveryCheck>(),

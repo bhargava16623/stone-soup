@@ -5,6 +5,7 @@ import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, themeQuartz, type ColDef, type ValueFormatterParams } from "ag-grid-community";
 import { formatUsd } from "@/lib/fees.ts";
 import type { LedgerRow } from "@/lib/queries.ts";
+import { plural } from "@/lib/plural.ts";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -52,7 +53,7 @@ export function LedgerGrid({ rows }: { rows: LedgerRow[] }) {
         flex: 1.3,
         minWidth: 200,
         // The pinned totals row has no single item.
-        valueGetter: (p) => (p.node?.rowPinned ? `${p.data!.units} items` : `${p.data!.units} × ${p.data!.item}`),
+        valueGetter: (p) => (p.node?.rowPinned ? plural(p.data!.units ?? 0, "item") : `${p.data!.units} × ${p.data!.item}`),
         cellRenderer: (p: { data: LedgerRow; value: string; node: { rowPinned?: string | null } }) =>
           p.node.rowPinned ? (
             <span className="font-medium">{p.value}</span>
@@ -91,7 +92,7 @@ export function LedgerGrid({ rows }: { rows: LedgerRow[] }) {
   const totals = useMemo(
     () => [
       {
-        donor: `${rows.length} gifts`,
+        donor: plural(rows.length, "gift"),
         units: rows.reduce((s, r) => s + r.units, 0),
         amountCents: rows.reduce((s, r) => s + r.amountCents, 0),
       } as Partial<LedgerRow>,

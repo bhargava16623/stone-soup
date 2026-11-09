@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { addCatalogItemsAction, readPriceListAction } from "@/app/vendor/[slug]/actions.ts";
 import type { CatalogEntry } from "@/lib/catalog.ts";
 import { resizeImage } from "@/lib/image.ts";
+import { plural } from "@/lib/plural.ts";
 
 type Row = CatalogEntry & { key: number; price: string };
 
@@ -28,7 +29,7 @@ export function CatalogForm({ vendorSlug }: { vendorSlug: string }) {
       const res = await readPriceListAction(base64, mimeType);
       if (!res.ok) return setMessage({ ok: false, text: res.error });
       setRows(res.data.map(fromEntry));
-      setMessage({ ok: true, text: `Read ${res.data.length} items. Check them, then save.` });
+      setMessage({ ok: true, text: `Read ${plural(res.data.length, "item")}. Check them, then save.` });
     });
   }
 
