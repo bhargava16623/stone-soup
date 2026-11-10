@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, Lock, ShieldAlert } from "lucide-react";
+import { BadgeCheck, FileText, Lock, ShieldAlert } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { DeliveryForm } from "@/components/delivery-form.tsx";
@@ -92,6 +92,7 @@ async function Dashboard({ params }: { params: PageProps<"/ngo/[slug]">["params"
                 <p className="mt-1 text-muted">
                   {statusLabel[n.status]} · {n.fundedUnits}/{n.quantity} funded · {n.deliveredUnits} delivered · {n.vendor.name}
                 </p>
+                {n.deliveries[0] && <LatestDelivery delivery={n.deliveries[0]} unit={n.catalogItem.unit} />}
                 {owner && n.fundedUnits > n.deliveredUnits && (
                   <DeliveryForm
                     ngoSlug={ngo.slug}
@@ -106,6 +107,24 @@ async function Dashboard({ params }: { params: PageProps<"/ngo/[slug]">["params"
           </ul>
         )}
       </section>
+    </div>
+  );
+}
+
+function LatestDelivery({ delivery: d, unit }: { delivery: { id: number; units: number; verdict: string; aiSummary: string | null }; unit: string }) {
+  const verified = d.verdict === "verified";
+  return (
+    <div className={`mt-3 flex gap-3 rounded-xl p-3 ${verified ? "bg-leaf-soft" : "bg-amber-soft"}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/api/deliveries/${d.id}/photo`} alt="" className="size-14 shrink-0 rounded-lg object-cover" />
+      <div>
+        <p className={`flex items-center gap-1 font-medium ${verified ? "text-leaf" : "text-amber"}`}>
+          {verified ? <BadgeCheck className="size-4" /> : <ShieldAlert className="size-4" />}
+          {d.units} {unit}
+          {d.units === 1 ? "" : "s"} {verified ? "delivered · photo verified" : "delivered · waiting for a reviewer"}
+        </p>
+        {d.aiSummary && <p className="mt-0.5 text-muted">{d.aiSummary}</p>}
+      </div>
     </div>
   );
 }

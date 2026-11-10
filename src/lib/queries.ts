@@ -51,7 +51,16 @@ export async function getNgoDashboard(slug: string) {
     with: {
       needs: {
         orderBy: (n) => [desc(n.createdAt)],
-        with: { vendor: true, catalogItem: true },
+        with: {
+          vendor: true,
+          catalogItem: true,
+          // The latest delivery, so its verdict stays on screen after the page refreshes.
+          deliveries: {
+            orderBy: (d) => [desc(d.createdAt)],
+            limit: 1,
+            columns: { id: true, units: true, verdict: true, aiSummary: true },
+          },
+        },
       },
     },
   });
