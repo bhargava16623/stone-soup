@@ -10,6 +10,12 @@ directly, the price is checked against the market, and the donor sees a photo wh
 
 Built for the PayPal **Build What's Next with PayPal and AI** hackathon.
 
+## Demo video
+
+**[Watch the 2½-minute demo](docs/stone-soup-demo.mp4)**: one $18 blanket followed from the Giving Agent,
+through PayPal straight to the supplier, to a Gemini-checked delivery photo, plus the features around every
+gift. Recorded on the PayPal sandbox with the real app.
+
 ## The problem
 
 - Individual donors are leaving: donor counts have fallen every year since 2021, and roughly 4 in 5
@@ -106,7 +112,7 @@ timeouts, and a cooldown for overloaded models.
   that prove it. Linked from every row of the ledger.
 - **Verified charities only** ([`/ngo/join`](src/app/ngo/join/page.tsx), [`src/lib/verify.ts`](src/lib/verify.ts)) —
   Stone Soup never makes a page for a charity on its own, and no one can post needs in a charity's name
-  without proving they run it. The EIN must be a 501(c)(3) in IRS data (ProPublica Nonprofit Explorer); the
+  without proving they run it. The EIN must be a 501(c)(3) in the IRS records (looked up through ProPublica's Nonprofit Explorer API); the
   charity publishes a code on its own website; Gemini with Google Search checks that the website is the
   charity's official one. If it can't confirm that, a reviewer (with the `REVIEW_KEY`) confirms the claim. A
   second claim on the same EIN is refused, and a registered charity's dashboard works only from the browser
@@ -132,6 +138,20 @@ passed to the agent as data, not instructions; flagged deliveries always go to a
 - **AG Grid** — the open ledger: sorting, column and quick filters, totals row, pagination, themed to the
   site ([`src/components/ledger-grid.tsx`](src/components/ledger-grid.tsx)).
 - **Render** — web service + Postgres via [`render.yaml`](render.yaml).
+
+## Data sources
+
+- **Charity records: IRS, via ProPublica.** When a charity registers, its EIN is looked up in the IRS
+  exempt-organisation records through ProPublica's free
+  [Nonprofit Explorer API](https://projects.propublica.org/nonprofits/api)
+  (`GET /nonprofits/api/v2/organizations/{ein}.json`, no API key). We use the registered name, city and state,
+  whether it is a 501(c)(3) (subsection code 3), and the IRS ruling year ("registered since"). The IRS itself
+  publishes these records only as bulk downloads and a search site, with no live lookup API; ProPublica serves
+  the same IRS data per EIN ([`src/lib/verify.ts`](src/lib/verify.ts)).
+- **Market prices: Channel3.** Real retail products and prices used for each need's price check (see
+  *Sponsor tools*).
+- **Donor statistics** quoted above: Fundraising Effectiveness Project (2025), Bloomerang (2025),
+  BBB Wise Giving Alliance / Give.org (2026).
 
 ## Run it locally
 

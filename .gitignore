@@ -20,3 +20,6 @@ npm-debug.log*
 # Agent instruction files Next.js generates on `next dev`
 AGENTS.md
 CLAUDE.md
+
+# Earlier local recordings (the demo film lives in docs/)
+demo-video/
